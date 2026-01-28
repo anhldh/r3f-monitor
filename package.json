@@ -2,7 +2,6 @@
     "name": "r3f-performance",
     "version": "0.1.2",
     "license": "MIT",
-    "readme": "README.md",
     "keywords": [
         "react-three-fiber",
         "r3f",
