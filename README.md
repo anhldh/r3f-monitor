@@ -9,8 +9,9 @@ A lightweight and easy-to-use tool to monitor the performance of your
   <tr>
     <td>Add the <code>&lt;PerformanceMonitor /&gt;</code> component anywhere in your R3F Canvas.</td>
     <td>
-        <img src="https://bf3xu0otcy.ufs.sh/f/lSBP1EY5xRSnLHNlxKuvoRAdugXS39mBlIzpHEcwjKqeLFNJ" alt="R3F Performance Monitor" />
-    </td>
+<a href="https://codesandbox.io/p/sandbox/3sqpy4">
+  <img src="https://bf3xu0otcy.ufs.sh/f/lSBP1EY5xRSnLHNlxKuvoRAdugXS39mBlIzpHEcwjKqeLFNJ" /></td>
+</a>
   </tr>
 </table>
 
