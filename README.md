@@ -77,7 +77,7 @@ position?: Sets the position of the panel. Options: 'top-right', 'top-left', 'bo
 
 ```jsx
 import { Canvas } from "@react-three/fiber";
-import { PerformanceMonitor } from "r3f-performance";
+import { PerfMonitor } from "r3f-performance";
 
 function App() {
   return (
