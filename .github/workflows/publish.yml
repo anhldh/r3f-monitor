@@ -1,0 +1,35 @@
+name: Node.js Package Publish
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Install Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+
+      # Install dependencies
+      - name: Install Dependencies
+        run: npm ci
+
+      # Build TypeScript to JavaScript
+      # Make sure you have a "build" script in your package.json
+      - name: Build
+        run: npm run build
+
+      # Publish to npm
+      # It will automatically use the version in package.json to publish
+      - name: Publish to npm
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

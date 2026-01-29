@@ -417,11 +417,6 @@ export class GLPerf {
     this.queryCreated = false;
     this.queryHasResult = false;
 
-    if (this.rafId) {
-      window.cancelAnimationFrame(this.rafId);
-      this.rafId = 0;
-    }
-
     // Clean up Performance Marks and Measures
     if (window.performance) {
       try {
@@ -430,19 +425,5 @@ export class GLPerf {
         performance.clearMeasures("cpu-duration");
       } catch (e) {}
     }
-
-    // Clean up logs and charts
-    this.logsAccums = {
-      mem: [],
-      gpu: [],
-      cpu: [],
-      fps: [],
-      fpsFixed: [],
-    };
-    this.fpsChart = [];
-    this.gpuChart = [];
-    this.cpuChart = [];
-    this.memChart = [];
-    this.names = [];
   }
 }
