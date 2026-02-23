@@ -1,0 +1,246 @@
+.perfWrapper {
+  position: fixed;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column; 
+  align-items: flex-end;   
+  gap: 4px;
+  pointer-events: none;
+}
+.perfWrapper > * {
+  pointer-events: auto;
+}
+
+.perfWrapper.topLeft,
+.perfWrapper.bottomLeft {
+  align-items: flex-start;
+}
+
+.topRight { top: 0; right: 0; }
+.topLeft { top: 0; left: 0; }
+.bottomRight { bottom: 0; right: 0; }
+.bottomLeft { bottom: 0; left: 0; }
+
+.perfS {
+  position: relative;
+  font-family: 'Roboto Mono', monospace;
+  background: #111;
+  color: #ccc;
+  width: 240px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  user-select: none;
+  font-size: 11px;
+  line-height: 1.5;
+  padding-bottom: 4px;
+}
+
+/* HEADER & TABS */
+.header {
+  display: flex;
+  background: #1a1a1a;
+  border-bottom: 1px solid #333;
+  height: 25px;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.tab {
+  flex: 1;
+  text-align: center;
+  cursor: pointer;
+  font-weight: bold;
+  color: #666;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  font-size: 9px;
+}
+.tab:hover {
+  color: #999;
+  background: #222;
+}
+.tabActive {
+  color: #fff;
+  background: #111;
+  border-bottom: 1px solid #00ffff;
+}
+
+.iconSetting {
+  width: 30px;
+  height: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #666;
+  border-left: 1px solid #222;
+  transition: color 0.2s;
+}
+.iconSetting:hover { color: #fff; }
+.iconSettingActive { color: #00ffff !important; }
+
+/* GRID LAYOUT */
+.gridRow {
+  display: grid;
+  padding: 4px 0;
+  align-items: center;
+  justify-items: center;
+  width: 100%;
+}
+.cols2 { grid-template-columns: repeat(2, 1fr); }
+.cols3 { grid-template-columns: repeat(3, 1fr); }
+
+.cell {
+  display: grid;
+  grid-template-columns: auto auto auto;
+  align-items: baseline;
+  justify-content: center;
+  column-gap: 6px;
+  width: 100%;
+}
+
+.unit {
+  opacity: 0.8;
+  font-weight: 500;
+  min-width: 14px;
+  text-align: left;
+  font-size: 9px;
+  white-space: nowrap;
+}
+.label {
+  font-weight: bold;
+  opacity: 0.8;
+  white-space: nowrap;
+}
+.val {
+  color: #fff;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* TAB PANELS */
+.tabPanel { width: 100%; }
+.isHidden { display: none; }
+.isActive { display: block; }
+
+/* GRAPH */
+.graph {
+  width: 100%;
+  height: auto;
+  overflow: hidden;
+  position: relative;
+  pointer-events: none;
+  display: flex;
+}
+.graphSection {
+  border-top: 1px solid #222;
+  padding-top: 6px;
+}
+
+/* SETTINGS PANEL */
+.settingsPanel {
+  padding: 8px 12px;
+}
+.settingsTitle {
+  font-size: 9px;
+  font-weight: bold;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #222;
+}
+.settingRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0;
+  cursor: pointer;
+  gap: 8px;
+}
+.settingCheckbox {
+  width: 12px;
+  height: 12px;
+  accent-color: #00ffff;
+  cursor: pointer;
+  margin: 0;
+}
+.settingLabel {
+  font-size: 10px;
+  color: #aaa;
+  flex: 1;
+}
+.graphTypeToggle {
+  display: flex;
+  gap: 2px;
+}
+.toggleBtn {
+  background: #222;
+  border: 1px solid #333;
+  color: #666;
+  font-size: 9px;
+  padding: 2px 8px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+.toggleBtn:hover {
+  color: #999;
+  background: #2a2a2a;
+}
+.toggleBtnActive {
+  background: #1a1a1a;
+  color: #00ffff;
+  border-color: #00ffff;
+}
+
+/* === PROGRAMS PANEL === */
+/* Programs Panel */
+.programsPanel {
+  min-width: 400px;
+  max-width: "100%";
+  max-height: 50vh;
+  overflow-y: auto;
+  background: #111;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  font-family: 'Roboto Mono', monospace;
+  font-size: 11px;
+  color: #ccc;
+  user-select: none;
+}
+
+.programsPanelHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px;
+  background: #1a1a1a;
+  border-bottom: 1px solid #333;
+  font-size: 9px;
+  font-weight: bold;
+  color: #fff;
+  text-transform: uppercase;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.programsClose {
+  cursor: pointer;
+  color: #fff;
+  font-size: 14px;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.programsClose:hover { color: #fff; }
+
+.programsPanel::-webkit-scrollbar { width: 4px; }
+.programsPanel::-webkit-scrollbar-track { background: #111; }
+.programsPanel::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }

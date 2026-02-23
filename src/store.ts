@@ -2,7 +2,7 @@ import { createWithEqualityFn } from "zustand/traditional";
 import { shallow } from "zustand/shallow";
 import * as THREE from "three";
 
-// --- ADD: Type cho bộ nhớ ---
+// Type memory
 export type EstimatedMemory = {
   vram: number;
   tex: number;
@@ -59,7 +59,6 @@ export type State = {
   startTime: number;
   triggerProgramsUpdate: number;
   customData: number;
-  // --- ADD: Thêm vào State ---
   estimatedMemory: EstimatedMemory;
   // --------------------------
   accumulated: {
@@ -140,7 +139,6 @@ export const usePerfImpl = createWithEqualityFn<State>((set, get): any => {
     customData: 0,
     fpsLimit: 60,
     overclockingFps: false,
-    // --- ADD: Khởi tạo giá trị mặc định ---
     estimatedMemory: {
       vram: 0,
       tex: 0,

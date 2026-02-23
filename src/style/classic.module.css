@@ -1,0 +1,256 @@
+.perfS {
+  position: fixed;
+  z-index: 9999;
+  font-family: 'Roboto Mono', -apple-system, BlinkMacSystemFont, monospace; 
+  background-color: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  padding: 6px 0 6px 6px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  user-select: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.containerHeight {
+  min-height: 110px;
+}
+
+/* Các vị trí */
+.topLeft { top: 0px; left: 0px; }
+.topRight { top: 0px; right: 0px; }
+.bottomLeft { bottom: 0px; left: 0px; }
+.bottomRight { bottom: 0px; right: 0px; }
+
+.minimal {
+  background-color: rgba(36, 36, 36, 0.85);
+}
+
+.perfIContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px; 
+  width: 100%;
+  padding-right: 6px;
+  box-sizing: border-box;
+}
+
+/* --- ITEM CHÍNH --- */
+.perfI {
+  display: flex;
+  flex-direction: column; 
+  justify-content: center;
+  align-items: flex-start; 
+  width: 55px; 
+  height: auto;
+  position: relative;
+  margin-right: 4px;
+}
+
+/* GIÁ TRỊ (Số + Đơn vị) */
+.perfI small {
+  font-size: 12px; 
+  color: #e0e0e0;
+  font-weight: 500;
+  padding-left: 0;
+  margin-bottom: 2px; 
+  white-space: nowrap;
+}
+
+/* LABEL (GPU, CPU...) */
+.perfB {
+  position: relative; 
+  bottom: auto;
+  right: auto;
+  text-align: left;
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: rgba(101, 197, 188, 1);
+  width: 100%;
+  opacity: 0.9;
+}
+
+.toggleContainer {
+  display: flex;
+  justify-content: flex-end; 
+  padding-right: 4px;
+}
+
+.toggle {
+  cursor: pointer;
+  font-size: 10px;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  padding: 4px 8px;
+  border-radius: 2px;
+  margin-left: 4px;
+  transition: all 0.2s;
+}
+
+.toggle:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.activeTab {
+  background-color: rgba(101, 197, 188, 0.3);
+  color: #fff;
+}
+
+.containerScroll {
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.graph {
+  width: 100%;
+  height: 66px;
+  overflow: hidden;
+  position: relative;
+  pointer-events: none;
+  display: flex;
+}
+
+.graphpc {
+  text-align: center;
+  font-weight: 700;
+  font-size: 12px;
+  line-height: 12px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  vertical-align: middle;
+  color: #f1f1f1;
+  padding: 7px;
+  width: 100%;
+  background-color: rgba(36, 36, 37, 0.8);
+  z-index: 1;
+  position: absolute;
+  height: 100%;
+}
+
+/* ===== TAB HEADER ===== */
+.tabHeader {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.tabBtn {
+  flex: 1;
+  padding: 7px 0;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.4);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s, background-color 0.2s;
+  font-family: inherit;
+  border-bottom: 2px solid transparent;
+}
+
+.tabBtn:hover {
+  color: rgba(255, 255, 255, 0.7);
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+.tabBtnActive {
+  color: #fff;
+  border-bottom-color: rgba(101, 197, 188, 0.8);
+  background-color: rgba(255, 255, 255, 0.06);
+}
+
+.tabSettingsBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  color: rgba(255, 255, 255, 0.35);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  transition: color 0.2s;
+  font-family: inherit;
+}
+
+.tabSettingsBtn:hover {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* ===== TAB CONTENT ===== */
+.tabContent {
+  padding: 2px 0;
+}
+
+/* ===== METRIC ROWS ===== */
+.metricsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  width: 100%;
+  padding: 4px 6px 4px 0;
+  box-sizing: border-box;
+}
+
+.separator {
+  width: 100%;
+  height: 1px;
+  background-color: rgba(255, 255, 255, 0.08);
+  margin: 4px 0;
+}
+
+/* ===== GRAPH HEADER (label + switch btn) ===== */
+.graphHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 6px 2px 0;
+}
+
+.graphLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #f1f1f1;
+  letter-spacing: 0.5px;
+}
+
+.graphDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.graphSwitchBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  font-size: 16px;
+  transition: color 0.2s, background-color 0.2s;
+  border-radius: 3px;
+  font-family: inherit;
+}
+
+.graphSwitchBtn:hover {
+  color: #fff;
+  background-color: rgba(255, 255, 255, 0.1);
+}

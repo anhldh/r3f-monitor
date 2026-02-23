@@ -2,7 +2,7 @@ import { type FC, useEffect, useState } from "react";
 import { usePerf, type ProgramsPerf } from "../store";
 import type { PerfProps } from "../types";
 import { estimateBytesUsed } from "../helpers/estimateBytesUsed";
-import s from "../styles.module.css";
+import s from "../style/program.module.css";
 
 // --- HELPERS ---
 
@@ -314,11 +314,6 @@ const ProgramUI: FC<{ el: ProgramsPerf }> = ({ el }) => {
               Object.keys(meshes).forEach((key) => {
                 if (meshes[key]) meshes[key].visible = invert;
               });
-
-              // 2. DO NOT mutate props directly (el.visible = invert) -> Causing Error
-              // el.visible = invert;
-
-              // 3. Update Local State
               setShowProgram(invert);
             }}
           >
@@ -407,11 +402,7 @@ export const ProgramsUI: FC<PerfProps> = () => {
   const programs: any = usePerf((state) => state.programs);
 
   return (
-    <div
-      className={s.programsContainer}
-      // CHẶN SCROLL: Ngăn sự kiện lăn chuột nổi lên Canvas cha
-      onWheel={(e) => e.stopPropagation()}
-    >
+    <div className={s.programsContainer} onWheel={(e) => e.stopPropagation()}>
       {programs &&
         Array.from(programs.values()).map((el: any) => {
           if (!el) return null;

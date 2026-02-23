@@ -1,7 +1,7 @@
 import type EventEmitter from "eventemitter3";
 
 /**
- * Callback cho event
+ * Callback
  */
 export type EventHandler = (...args: any[]) => any;
 
@@ -11,12 +11,11 @@ export type EventHandler = (...args: any[]) => any;
 export type EventContext = EventEmitter;
 
 /**
- * Tuỳ chọn cho event
+ * Options
  */
 export interface EventOptions {
-  /** Chỉ lắng nghe 1 lần */
   once?: boolean;
 
-  /** EventEmitter cụ thể (mặc định global) */
+  /** EventEmitter*/
   context?: EventContext;
 }

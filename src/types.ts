@@ -15,7 +15,7 @@ export interface PerfProps {
 
 export interface PerfPropsGui extends PerfProps {
   showGraph?: boolean;
-  displayType?: "tab" | "plane";
+  displayType?: "tab" | "classic";
   graphType?: "line" | "bar";
   antialias?: boolean;
   openByDefault?: boolean;

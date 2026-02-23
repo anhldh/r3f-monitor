@@ -45,7 +45,6 @@ const addMuiPerfID = (
   if (!currentObjectWithMaterials[uuid]) {
     currentObjectWithMaterials[uuid] = { meshes: {}, material };
   }
-  // tránh flip needsUpdate liên tục
   material.needsUpdate = false;
   return uuid;
 };
@@ -100,7 +99,6 @@ export const PerfHeadless: FC<PerfProps> = ({
 
         setPerf({ log });
 
-        // NOTE: accumulated đang bị mutate tại chỗ (giữ nguyên để tương thích)
         const { accumulated }: any = getPerf();
         const glRender: any = gl.info.render;
 
@@ -138,6 +136,8 @@ export const PerfHeadless: FC<PerfProps> = ({
           geometries: gl.info.memory.geometries,
           textures: gl.info.memory.textures,
           programs: gl.info.programs?.length || 0,
+
+          matrices: matriceCount.value + matriceWorldCount.value,
         };
 
         emitEvent("log", [log, glInfo]);
@@ -170,8 +170,8 @@ export const PerfHeadless: FC<PerfProps> = ({
     });
 
     return perf;
-    // IMPORTANT: useMemo chỉ tạo 1 instance trên 1 mount.
-    // StrictMode dev sẽ mount/unmount/mount => instance mới sẽ được tạo, và cleanup sẽ dispose.
+    // IMPORTANT: useMemo only create 1 instance - 1 mount.
+    // StrictMode dev will mount/unmount/mount => instance create,  cleanup will dispose.
   }, [overClock, chart, logsPerSecond, gl]);
 
   // sync settings changes
@@ -223,7 +223,7 @@ export const PerfHeadless: FC<PerfProps> = ({
     const unsubEffect = addEffect(() => {
       if (getPerf().paused) setPerf({ paused: false });
 
-      // GPU begin (StrictMode-safe, không patch Scene.prototype)
+      // GPU begin
       PerfLib?.begin("profiler");
 
       if (window.performance) {
@@ -252,25 +252,23 @@ export const PerfHeadless: FC<PerfProps> = ({
 
       const now = window.performance.now();
 
-      // --- THÊM ĐOẠN NÀY ĐỂ TÍNH VRAM ---
+      // Count Vram
       if (now - lastMemoryUpdate > memoryUpdateRate) {
         lastMemoryUpdate = now;
 
-        // Tính VRAM ước tính
+        // Estimate VRAM
         const vramStats = estimateMemory(scene);
 
-        // Lấy RAM JS hiện tại từ PerfLib (đã tính ở GLPerf.ts)
-        // PerfLib.currentMem trả về MB, ta giữ nguyên hoặc convert tùy ý
+        // Memory Ram
         const jsMem = (PerfLib as any).currentMem || 0;
 
-        // Lưu vào store để UI lấy ra hiển thị
-        // Bạn cần mở rộng type trong store nếu TypeScript báo lỗi
+        // Save store
         setPerf({
           estimatedMemory: {
-            vram: vramStats.total / 1024 / 1024, // Đổi ra MB
+            vram: vramStats.total / 1024 / 1024, // MB
             tex: vramStats.texture / 1024 / 1024,
             geo: vramStats.geometry / 1024 / 1024,
-            ram: jsMem, // Đã là MB
+            ram: jsMem, // MB
           },
         });
       }
@@ -320,7 +318,7 @@ export const PerfHeadless: FC<PerfProps> = ({
         }
       });
 
-      // NOTE: triggerProgramsUpdate++ đang mutate, giữ nguyên behavior cũ
+      // NOTE: triggerProgramsUpdate++
       if (programs.size !== getPerf().programs.size) {
         countGeoDrawCalls(programs);
         setPerf({
@@ -336,10 +334,10 @@ export const PerfHeadless: FC<PerfProps> = ({
         window.cancelIdleCallback(PerfLib.idleCbId);
       }
 
-      // dispose GPU query state (bạn cần implement trong GLPerf)
+      // dispose GPU query state
       PerfLib?.dispose?.();
 
-      // restore matrix prototypes (FIX BUG: restore đúng biến)
+      // restore matrix prototypes
       if (matrixUpdate) {
         THREE.Object3D.prototype.updateMatrixWorld = updateMatrixWorldTemp;
         THREE.Object3D.prototype.updateWorldMatrix = updateWorldMatrixTemp;

@@ -2,10 +2,10 @@ import { type FC, useMemo, useRef } from "react";
 import { matriceCount, matriceWorldCount } from "./PerfHeadless";
 import { Canvas, useFrame, type Viewport } from "@react-three/fiber";
 import { getPerf, usePerf } from "../store";
-import { colorsGraph } from "./PerfMonitor";
 import * as THREE from "three";
 import type { PerfUIProps } from "../types";
-import styles from "../styles.module.css";
+import styles from "../style/tab.module.css";
+import { colorsGraph } from "./Utils";
 
 export interface graphData {
   curve: THREE.SplineCurve;
@@ -48,7 +48,7 @@ const ChartCurve: FC<PerfUIProps> = ({
       return;
     }
     const padding = minimal ? 2 : 6;
-    const paddingTop = minimal ? 12 : 50;
+    const paddingTop = minimal ? 2 : 6;
     const len = chart.length;
     for (let i = 0; i < len; i++) {
       const id = (getPerf().chart.circularId + i + 1) % len;
@@ -170,11 +170,7 @@ export const ChartUI: FC<PerfUIProps> = ({
     <div
       className={styles.graph}
       style={{
-        display: "flex",
-        marginTop: 6,
-        position: "absolute",
-        width: "100%",
-        height: `${minimal ? 37 : showGraph ? 100 : 60}px`,
+        height: `${minimal ? 37 : showGraph ? 70 : 60}px`,
       }}
     >
       <Canvas
@@ -196,12 +192,10 @@ export const ChartUI: FC<PerfUIProps> = ({
         }}
         flat={true}
         style={{
-          marginBottom: `-42px`,
-          position: "relative",
           pointerEvents: "none",
           background: "transparent !important",
           width: "100%",
-          height: `${minimal ? 37 : showGraph ? 100 : 60}px`,
+          height: "100%",
         }}
       >
         {!paused ? (
@@ -214,7 +208,6 @@ export const ChartUI: FC<PerfUIProps> = ({
     </div>
   );
 };
-
 const Renderer = () => {
   useFrame(function updateR3FPerf({ gl, scene, camera }) {
     camera.updateMatrix();

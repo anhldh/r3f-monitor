@@ -1,11 +1,11 @@
 import EventEmitter from "eventemitter3";
 import type { EventHandler, EventOptions, EventContext } from "./types";
 
-// EventEmitter dùng chung toàn app
+// EventEmitter global
 const eventEmitter = new EventEmitter();
 
 /**
- * Đăng ký event
+ * Register event
  */
 export function onEvent(
   eventName: string,
@@ -18,7 +18,7 @@ export function onEvent(
 }
 
 /**
- * Huỷ đăng ký event
+ * Unregister event
  */
 export function offEvent(
   eventName: string,

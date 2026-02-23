@@ -3,7 +3,7 @@ import react from "@vitejs/plugin-react";
 import dts from "vite-plugin-dts";
 import path from "node:path";
 import { visualizer } from "rollup-plugin-visualizer";
-// 1. Import plugin
+
 import cssInjectedByJsPlugin from "vite-plugin-css-injected-by-js";
 
 export default defineConfig({
@@ -18,7 +18,6 @@ export default defineConfig({
     cssInjectedByJsPlugin(),
   ],
   build: {
-    // cssCodeSplit: false, // Có thể xóa dòng này, plugin sẽ tự xử lý
     lib: {
       entry: path.resolve(__dirname, "src/index.ts"),
       formats: ["es", "cjs"],

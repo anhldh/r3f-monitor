@@ -12,7 +12,7 @@ export function estimateMemory(scene: THREE.Object3D) {
     if ((object as any).isMesh) {
       const mesh = object as THREE.Mesh;
 
-      // --- 1. Tính Geometry ---
+      // --- 1. Count Geometry ---
       if (mesh.geometry && !geometriesSeen.has(mesh.geometry.uuid)) {
         geometriesSeen.add(mesh.geometry.uuid);
 
@@ -29,7 +29,7 @@ export function estimateMemory(scene: THREE.Object3D) {
         }
       }
 
-      // --- 2. Tính Material & Textures ---
+      // --- 2. Count Material & Textures ---
       const material = mesh.material;
       const materials = Array.isArray(material) ? material : [material];
 
@@ -44,14 +44,14 @@ export function estimateMemory(scene: THREE.Object3D) {
             if (!texturesSeen.has(tex.uuid)) {
               texturesSeen.add(tex.uuid);
 
-              // Nếu là CompressedTexture (KTX2, DDS...)
+              //  CompressedTexture (KTX2, DDS...)
               if ((tex as any).isCompressedTexture && (tex as any).mipmaps) {
-                // Cộng tổng dung lượng các mipmaps đã nén
+                // Total memory
                 (tex as any).mipmaps.forEach((mip: any) => {
                   if (mip.data) textureMemory += mip.data.byteLength;
                 });
               }
-              // Nếu là Texture thường (JPG, PNG...) -> Tính kích thước giải nén
+              // Texture
               else if (tex.image) {
                 const image = tex.image as { width?: number; height?: number };
                 const width = image.width || 0;

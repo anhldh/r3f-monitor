@@ -1,0 +1,238 @@
+/* =========================================
+   PROGRAMS UI STYLES
+========================================= */
+
+.programsContainer {
+  margin-top: 0;
+}
+
+.programGeo {
+  margin-bottom: 2px;
+  pointer-events: auto;
+}
+
+/* --- HEADER --- */
+.programHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: rgba(255, 255, 255, 0.06); 
+  padding: 6px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  min-height: 24px;
+  border: 1px solid transparent;
+}
+
+.programHeader:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.programHeader * {
+  cursor: pointer !important;
+}
+
+.programHeader small {
+  font-size: 9px;
+}
+
+.programHeader > b {
+  margin-right: 4px;
+  cursor: pointer;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  overflow: hidden;
+}
+
+.programTitle {
+  font-weight: 700;
+  font-size: 12px;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-right: 10px;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* --- BUTTONS & TOGGLES --- */
+.toggleArrow {
+  font-size: 10px;
+  margin-right: 8px;
+  color: #888;
+  width: 12px;
+  text-align: center;
+  transition: transform 0.2s;
+}
+
+.toggleVisible {
+  pointer-events: auto;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 12px;
+  background-color: rgb(41, 43, 45);
+  width: auto;
+  margin: 0;
+  color: rgba(145, 145, 145, 1);
+  text-align: center;
+  display: inline-block;
+  vertical-align: middle;
+  padding: 4px 6px;
+}
+
+.toggleVisible:hover {
+  background-color: rgb(31 31 31);
+}
+
+.toggleVisible svg {
+  width: 12px;
+  height: 12px;
+  float: left;
+}
+
+.visibilityBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 3px;
+  margin-left: 4px;
+  color: #666;
+  background: transparent;
+  transition: all 0.2s;
+}
+
+.visibilityBtn:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.visibilityBtn.active {
+  color: #fff;
+}
+
+.programConsole {
+  font-weight: bold;
+  letter-spacing: 0.02em;
+  background-color: rgb(41, 43, 45);
+  color: rgb(211, 211, 211);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  display: block;
+  font-size: 11px;
+  padding: 5px;
+  margin: 4px auto;
+  border: none;
+  width: 100%;
+  text-align: center;
+}
+
+/* --- BADGES --- */
+.metricBadge {
+  display: flex;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.3);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  color: #aaa;
+  white-space: nowrap;
+}
+
+.metricBadge b {
+  color: #4fd1c5; 
+  margin-right: 4px;
+  font-weight: 600;
+  font-size: 11px;
+}
+
+/* --- LISTS (Uniforms & Geometries) --- */
+.programsULHeader {
+  display: flex;
+  position: relative;
+  font-weight: bold;
+  color: #fff;
+  line-height: 14px;
+  margin: 4px 0;
+}
+
+.programsULHeader svg {
+  margin-right: 4px;
+  display: inline-block;
+}
+
+.programsUL {
+  display: block;
+  position: relative;
+  padding-left: 10px;
+  margin: 6px 6px;
+  list-style: none;
+}
+
+.programsUL img {
+  max-height: 60px;
+  max-width: 100%;
+  margin: 6px auto;
+  display: block;
+}
+
+.programsUL:after {
+  content: '';
+  position: absolute;
+  left: 0px;
+  top: 0px;
+  width: 1px;
+  height: 100%;
+  background-color: grey;
+  transform: translateX(-50%);
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.programsUL li {
+  border-bottom: 1px solid #313131;
+  display: block;
+  padding: 4px;
+  margin: 0;
+  line-height: 1;
+}
+
+.programsUL b {
+  font-weight: bold;
+}
+
+.programsUL small {
+  text-align: revert;
+  letter-spacing: 1px;
+  font-size: 10px;
+  font-weight: 500;
+  margin-left: 2px;
+  color: rgb(101, 197, 188);
+}
+
+.programsGeoLi {
+  display: flex !important;
+  height: auto !important;
+}
+
+.programsGeoLi span {
+  display: block;
+  position: relative;
+}
+
+.programsGeoLi b {
+  padding-left: 12px;
+}
