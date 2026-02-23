@@ -4,31 +4,62 @@
 
 **[Changelog](https://github.com/anhldh/r3f-monitor/blob/main/CHANGELOG.md)**
 
-An easy tool to monitor the performance of your  
-[@react-three/fiber](https://github.com/pmndrs/react-three-fiber) application.
+An advanced, easy-to-use performance monitoring tool for [@react-three/fiber](https://github.com/pmndrs/react-three-fiber) applications.
+
+Add the <code>&lt;PerfMonitor /&gt;</code> component anywhere in your R3F Canvas.
+
+## Display Modes
+
+### 🗂 Tab Display (Default)
+
+A modern, structured interface with separated tabs for better focus and deep inspection.
 
 <table>
   <tr>
-    <td>Add the <code>&lt;PerfMonitor /&gt;</code> component anywhere in your R3F Canvas.</td>
+    <td width="220"><strong>Tab Display</strong><br/><br/>
+      Modern tab-based layout.<br/>
+      Best for deep performance debugging.
+    </td>
     <td>
-<a href="https://codesandbox.io/p/sandbox/3sqpy4">
-  <img src="https://bf3xu0otcy.ufs.sh/f/lSBP1EY5xRSnLHNlxKuvoRAdugXS39mBlIzpHEcwjKqeLFNJ" /></td>
-</a>
+      <img src="https://bf3xu0otcy.ufs.sh/f/lSBP1EY5xRSn0ZYS1Dbpsg4MZrJQDzVO5Iy3AFX186WBd2T9" />
+    </td>
   </tr>
 </table>
 
-**[View Example](https://codesandbox.io/p/sandbox/3sqpy4)**
+---
 
-## Features
+### 📊 Classic Display
 
-- FPS and render performance monitoring
-- Draw calls, geometries and WebGL program analysis
-- Memory usage tracking
-- Estimated GPU VRAM usage
-- Optional performance graphs
-- Minimal / headless modes for production or debugging
+A compact, always-visible performance panel inspired by traditional FPS monitors.
 
-## Installation
+<table>
+  <tr>
+    <td width="220"><strong>Classic Display</strong><br/><br/>
+      Compact single-panel layout.<br/>
+      Fast visual performance overview.
+    </td>
+    <td>
+      <img src="https://bf3xu0otcy.ufs.sh/f/lSBP1EY5xRSnLHNlxKuvoRAdugXS39mBlIzpHEcwjKqeLFNJ" />
+    </td>
+  </tr>
+</table>
+
+## 🧪 Example
+
+Live example:  
+👉 https://codesandbox.io/p/sandbox/3sqpy4
+
+## 🚀 Key Features
+
+- **Comprehensive Metrics:** Monitor FPS, CPU/GPU render times, and JS Heap Memory.
+- **VRAM Estimation:** Get an estimated breakdown of your GPU memory usage (Textures and Geometries).
+- **Deep Analysis:** Inspect individual WebGL programs, toggle visibility, and track matrix updates.
+- **Overclock Mode:** Bypass V-Sync limitations to benchmark true hardware rendering capabilities.
+- **Flexible UI:** Choose between graphical visualizations, detailed lists, or a minimal condensed view.
+
+---
+
+## 📦 Installation
 
 ```bash
 # npm
@@ -39,38 +70,44 @@ yarn add r3f-monitor
 
 # pnpm
 pnpm add r3f-monitor
+
 ```
 
-## Options
+## ⚙️ Options
 
-```jsx
-logsPerSecond?: 10, // Refresh rate of the logs
+```ts
+logsPerSecond?: number          // Log refresh rate (default: 10)
 
-antialias?: true, // Take a bit more performances but render the text with antialiasing
+antialias?: boolean             // Enable text antialiasing
 
-overClock?: false, // Disable the limitation of the monitor refresh rate for the fps
+overClock?: boolean             // Disable FPS refresh limit
 
-deepAnalyze?: false, // More detailed informations about gl programs
+deepAnalyze?: boolean           // Enable detailed WebGL program inspection
 
-showGraph?: Toggles the visibility of the performance graphs. Default true
+showGraph?: boolean             // Toggle performance graphs (default: true)
 
-graphType?: Style of the graph. Options: 'line' or 'bar'.
+graphType?: "line" | "bar"      // Graph style (default: "bar")
 
-minimal?: false // condensed version with the most important informations (gpu/memory/fps/memory/vram)
+minimal?: boolean               // Compact condensed view
 
-matrixUpdate?: false // count the number of time matrixWorldUpdate is called per frame
+matrixUpdate?: boolean          // Count matrixWorld updates per frame
 
 chart?: {
-  hz: 60, // graphs refresh frequency parameter
-  length: 120, // number of values shown on the monitor
+  hz?: number                   // Graph refresh frequency (default: 60)
+  length?: number               // Number of data points displayed (default: 120)
 }
 
-className?: '' // override CSS class
+className?: string              // Custom CSS class
 
-style?: {} // override style
+style?: React.CSSProperties     // Inline style override
 
-position?: Sets the position of the panel. Options: 'top-right', 'top-left', 'bottom-right', 'bottom-left'.
+position?:
+  | "top-right"
+  | "top-left"
+  | "bottom-right"
+  | "bottom-left"               // Default: "top-right"
 
+displayType?: "tab" | "classic" // Default: "tab"
 ```
 
 ## Usage
