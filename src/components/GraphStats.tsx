@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+
 import { getPerf, usePerf } from "../store";
 
 type Theme = { fg: string; bg: string };
@@ -253,7 +254,9 @@ export function ChartStats({
     <div
       ref={wrapperRef}
       className={className}
-      onClick={() => {
+      onPointerDown={(e) => e.stopPropagation()}
+      onClick={(e) => {
+        e.stopPropagation();
         if (hasChange && panels.length > 1) {
           setActiveIndex((prev) => (prev + 1) % panels.length);
         }

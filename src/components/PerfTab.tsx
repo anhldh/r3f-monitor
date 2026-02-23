@@ -1,11 +1,13 @@
 import { type FC, useRef, useState } from "react";
-import { HtmlMinimal } from "./HtmlMinimal";
-import { PerfHeadless } from "./PerfHeadless";
+
 import { useEvent } from "../events/react";
-import { ProgramsUI } from "./Program";
 import { usePerf } from "../store";
 import type { PerfPropsGui } from "../types";
 import s from "../style/tab.module.css";
+
+import { ProgramsUI } from "./Program";
+import { PerfHeadless } from "./PerfHeadless";
+import { HtmlMinimal } from "./HtmlMinimal";
 import { ChartUI } from "./Graph";
 import { ChartStats } from "./GraphStats";
 import { colorsGraph, IconCode, IconGear, SettingCheckbox } from "./Utils";
@@ -124,7 +126,10 @@ export const PerfTab: FC<PerfPropsGui> = (props) => {
           >
             {/* HEADER */}
             {!minimal && (
-              <div className={s.header}>
+              <div
+                className={s.header}
+                onPointerDown={(e) => e.stopPropagation()}
+              >
                 <div
                   className={`${s.tab} ${tab === "perf" && !showSettings ? s.tabActive : ""}`}
                   onClick={() => {
@@ -166,6 +171,7 @@ export const PerfTab: FC<PerfPropsGui> = (props) => {
               {!minimal && (
                 <div
                   className={`${s.tabPanel} ${showSettings ? s.isActive : s.isHidden}`}
+                  onPointerDown={(e) => e.stopPropagation()}
                 >
                   <div className={s.settingsPanel}>
                     <div className={s.settingsTitle}>Settings</div>
@@ -395,7 +401,10 @@ export const PerfTab: FC<PerfPropsGui> = (props) => {
           </div>
           {/* Program deepAnalyze*/}
           {isTop && localDeepAnalyze && showPrograms && (
-            <div className={s.programsPanel}>
+            <div
+              className={s.programsPanel}
+              onPointerDown={(e) => e.stopPropagation()}
+            >
               <div className={s.programsPanelHeader}>
                 <span>Programs</span>
                 <div

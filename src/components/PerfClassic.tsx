@@ -1,11 +1,13 @@
 import { type FC, useRef, useState } from "react";
-import { HtmlMinimal } from "./HtmlMinimal";
-import { PerfHeadless } from "./PerfHeadless";
+
 import { useEvent } from "../events/react";
-import { ProgramsUI } from "./Program";
 import { setPerf, usePerf } from "../store";
 import type { PerfPropsGui } from "../types";
 import s from "../style/classic.module.css";
+
+import { ProgramsUI } from "./Program";
+import { PerfHeadless } from "./PerfHeadless";
+import { HtmlMinimal } from "./HtmlMinimal";
 import { ChartUI } from "./Graph";
 import { ChartStats } from "./GraphStats";
 import { colorsGraph } from "./Utils";
@@ -247,7 +249,10 @@ export const PerfClassic: FC<PerfPropsGui> = (props) => {
 
                 {/* ====== BLOCK 4: Programs ====== */}
                 {showMore && tab === "programs" && (
-                  <div className={s.containerScroll}>
+                  <div
+                    className={s.containerScroll}
+                    onPointerDown={(e) => e.stopPropagation()}
+                  >
                     <ProgramsUI />
                   </div>
                 )}
@@ -260,6 +265,7 @@ export const PerfClassic: FC<PerfPropsGui> = (props) => {
                   style={{
                     marginTop: 6,
                   }}
+                  onPointerDown={(e) => e.stopPropagation()}
                 >
                   {deepAnalyze && (
                     <div
