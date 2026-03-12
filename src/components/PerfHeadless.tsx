@@ -68,7 +68,10 @@ export const PerfHeadless: FC<PerfProps> = ({
   matrixUpdate,
 }) => {
   const { gl, scene } = useThree();
-  setPerf({ gl, scene });
+
+  useEffect(() => {
+    setPerf({ gl, scene });
+  }, [gl, scene]);
 
   const memoryUpdateRate = 1000;
   let lastMemoryUpdate = 0;

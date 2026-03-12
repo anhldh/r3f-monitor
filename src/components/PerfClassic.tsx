@@ -70,7 +70,7 @@ const GLValue = ({
     const [, gl] = payload as EventPayload;
     if (gl && ref.current) {
       let val: string | number = gl[metric];
-      if (metric === "calls" && val === 1) val = "--";
+      if (metric === "calls" && val === 0) val = "--";
       ref.current.innerText = val + suffix;
     }
   });
