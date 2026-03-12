@@ -71,6 +71,9 @@ yarn add r3f-monitor
 # pnpm
 pnpm add r3f-monitor
 
+# bun
+bun i r3f-monitor
+
 ```
 
 ## ⚙️ Options

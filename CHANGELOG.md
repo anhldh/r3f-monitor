@@ -1,9 +1,21 @@
 # R3F-MONITOR
 
-## 0.1.0:
+All notable changes to this project will be documented in this file.
 
-- Initial version
+## 1.0.2
+
+### Fixed
+
+- Fix some errors and warnings.
 
 ## 1.0.0
 
-- New UI version
+### Added
+
+- Introduced the new monitor UI.
+
+## 0.1.0
+
+### Added
+
+- Initial release.
