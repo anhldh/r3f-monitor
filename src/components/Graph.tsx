@@ -26,7 +26,6 @@ const ChartCurve: FC<PerfUIProps> = ({
   }, [chart]);
 
   const fpsRef = useRef<any>(null);
-  const fpsMatRef = useRef<any>(null);
   const gpuRef = useRef<any>(null);
   const cpuRef = useRef<any>(null);
 
@@ -74,11 +73,6 @@ const ChartCurve: FC<PerfUIProps> = ({
 
   useFrame(function updateChartCurve({ viewport }) {
     updatePoints("fps", 1, fpsRef.current, viewport);
-    if (fpsMatRef.current) {
-      fpsMatRef.current.color.set(
-        getPerf().overclockingFps ? colorsGraph.overClock : colorsGraph.fps,
-      );
-    }
     updatePoints("gpu", 5, gpuRef.current, viewport);
     updatePoints("cpu", 5, cpuRef.current, viewport);
   });
@@ -104,12 +98,7 @@ const ChartCurve: FC<PerfUIProps> = ({
             needsUpdate
           />
         </bufferGeometry>
-        <lineBasicMaterial
-          ref={fpsMatRef}
-          color={colorsGraph.fps}
-          transparent
-          opacity={0.5}
-        />
+        <lineBasicMaterial color={colorsGraph.fps} transparent opacity={0.5} />
       </line>
       <line
         // @ts-ignore
@@ -170,7 +159,7 @@ export const ChartUI: FC<PerfUIProps> = ({
     <div
       className={styles.graph}
       style={{
-        height: `${minimal ? 37 : showGraph ? 70 : 60}px`,
+        height: `${minimal ? 30 : showGraph ? 52 : 46}px`,
       }}
     >
       <Canvas

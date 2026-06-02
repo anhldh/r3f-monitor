@@ -54,7 +54,6 @@ export type State = {
   getReport: () => any;
   log: any;
   paused: boolean;
-  overclockingFps: boolean;
   fpsLimit: number;
   startTime: number;
   triggerProgramsUpdate: number;
@@ -138,7 +137,6 @@ export const usePerfImpl = createWithEqualityFn<State>((set, get): any => {
     startTime: 0,
     customData: 0,
     fpsLimit: 60,
-    overclockingFps: false,
     estimatedMemory: {
       vram: 0,
       tex: 0,

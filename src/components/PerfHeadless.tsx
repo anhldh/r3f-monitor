@@ -7,7 +7,7 @@ import {
 } from "@react-three/fiber";
 import * as THREE from "three";
 
-import { overLimitFps, GLPerf } from "../internal";
+import { GLPerf } from "../internal";
 import { countGeoDrawCalls } from "../helpers/countGeoDrawCalls";
 import { getPerf, type ProgramsPerfs, setPerf } from "../store";
 import type { PerfProps } from "../types";
@@ -61,7 +61,6 @@ const getMUIIndex = (muid: string) => muid === "muiPerf";
  * Performance profiler component (StrictMode-safe)
  */
 export const PerfHeadless: FC<PerfProps> = ({
-  overClock,
   logsPerSecond,
   chart,
   deepAnalyze,
@@ -79,7 +78,6 @@ export const PerfHeadless: FC<PerfProps> = ({
   const PerfLib = useMemo(() => {
     const perf = new GLPerf({
       trackGPU: true,
-      overClock: overClock,
       chartLen: chart ? chart.length : 120,
       chartHz: chart ? chart.hz : 60,
       logsPerSecond: logsPerSecond || 10,
@@ -175,22 +173,15 @@ export const PerfHeadless: FC<PerfProps> = ({
     return perf;
     // IMPORTANT: useMemo only create 1 instance - 1 mount.
     // StrictMode dev will mount/unmount/mount => instance create,  cleanup will dispose.
-  }, [overClock, chart, logsPerSecond, gl]);
+  }, [chart, logsPerSecond, gl]);
 
   // sync settings changes
   useEffect(() => {
     if (!PerfLib) return;
 
-    PerfLib.overClock = overClock || false;
-    if (overClock === false) {
-      setPerf({ overclockingFps: false });
-      overLimitFps.value = 0;
-      overLimitFps.isOverLimit = 0;
-    }
-
     PerfLib.chartHz = chart?.hz || 60;
     PerfLib.chartLen = chart?.length || 120;
-  }, [PerfLib, overClock, chart?.hz, chart?.length]);
+  }, [PerfLib, chart?.hz, chart?.length]);
 
   // main r3f hooks + optional deep analyze
   useEffect(() => {
@@ -226,13 +217,8 @@ export const PerfHeadless: FC<PerfProps> = ({
     const unsubEffect = addEffect(() => {
       if (getPerf().paused) setPerf({ paused: false });
 
-      // GPU begin
+      // GPU begin + CPU begin (statgl: performance.now())
       PerfLib?.begin("profiler");
-
-      if (window.performance) {
-        window.performance.mark("cpu-started");
-        (PerfLib as any).startCpuProfiling = true;
-      }
 
       matriceWorldCount.value = 0;
       matriceCount.value = 0;
@@ -247,10 +233,6 @@ export const PerfHeadless: FC<PerfProps> = ({
 
       if (PerfLib && !PerfLib.paused) {
         PerfLib.nextFrame(window.performance.now());
-
-        if (overClock && typeof window.requestIdleCallback !== "undefined") {
-          PerfLib.idleCbId = requestIdleCallback(PerfLib.nextFps);
-        }
       }
 
       const now = window.performance.now();
@@ -332,11 +314,6 @@ export const PerfHeadless: FC<PerfProps> = ({
     });
 
     return () => {
-      // cleanup requestIdleCallback
-      if (PerfLib && typeof window.cancelIdleCallback !== "undefined") {
-        window.cancelIdleCallback(PerfLib.idleCbId);
-      }
-
       // dispose GPU query state
       PerfLib?.dispose?.();
 
@@ -350,7 +327,7 @@ export const PerfHeadless: FC<PerfProps> = ({
       unsubEffect();
       unsubAfter();
     };
-  }, [PerfLib, gl, scene, deepAnalyze, overClock, matrixUpdate]);
+  }, [PerfLib, gl, scene, deepAnalyze, matrixUpdate]);
 
   // tail: when r3f stops rendering
   useEffect(() => {

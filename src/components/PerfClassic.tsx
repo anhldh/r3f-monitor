@@ -107,7 +107,6 @@ export const PerfClassic: FC<PerfPropsGui> = (props) => {
     showGraph,
     openByDefault,
     className,
-    overClock,
     graphType,
     style,
     position,
@@ -125,8 +124,6 @@ export const PerfClassic: FC<PerfPropsGui> = (props) => {
   const gl = usePerf((s) => s.gl);
 
   // FPS overclock
-  const overclockingFps = usePerf((s) => s.overclockingFps);
-  const fpsLimit = usePerf((s) => s.fpsLimit);
   const fpsRef = useRef<HTMLSpanElement>(null);
 
   useEvent("log", (payload: any) => {
@@ -146,14 +143,12 @@ export const PerfClassic: FC<PerfPropsGui> = (props) => {
           : s.topRight;
 
   const heightStyle = showGraph && graphType === "line" && !deepAnalyze;
-  const fpsColor = overclockingFps ? colorsGraph.overClock : colorsGraph.fps;
 
   return (
     <>
       <PerfHeadless
         logsPerSecond={logsPerSecond}
         chart={chart}
-        overClock={overClock}
         deepAnalyze={deepAnalyze}
         matrixUpdate={matrixUpdate}
       />
@@ -166,10 +161,7 @@ export const PerfClassic: FC<PerfPropsGui> = (props) => {
           {/* ====== BLOCK 1: Main Metrics ====== */}
           {gl && (
             <div className={s.perfIContainer}>
-              <MetricItem
-                label={`FPS${overclockingFps ? ` ${fpsLimit}🚀` : ""}`}
-                color={fpsColor}
-              >
+              <MetricItem label={`FPS`} color={colorsGraph.fps}>
                 <span ref={fpsRef}>0</span>
               </MetricItem>
 
@@ -203,7 +195,6 @@ export const PerfClassic: FC<PerfPropsGui> = (props) => {
               <div
                 style={{
                   display: showMore ? "block" : "none",
-                  marginTop: "4px",
                 }}
               >
                 <div className={s.perfIContainer}>
