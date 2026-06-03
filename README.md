@@ -52,10 +52,12 @@ Live example:
 ## 🚀 Key Features
 
 - **Comprehensive Metrics:** Monitor FPS, CPU/GPU render times, and JS Heap Memory.
+- **Accurate Measurement Engine (v2):** FPS via a real 1-second sliding window, CPU via `performance.now()` accumulation, and GPU via a WebGL2 timer-query queue (`EXT_disjoint_timer_query_webgl2`) reporting true milliseconds.
 - **VRAM Estimation:** Get an estimated breakdown of your GPU memory usage (Textures and Geometries).
 - **Deep Analysis:** Inspect individual WebGL programs, toggle visibility, and track matrix updates.
-- **Overclock Mode:** Bypass V-Sync limitations to benchmark true hardware rendering capabilities.
 - **Flexible UI:** Choose between graphical visualizations, detailed lists, or a minimal condensed view.
+
+> **Note:** Overclock mode was **removed in v2**. It still exists in `1.2.0` and earlier — pin to `1.2.0` if you rely on it.
 
 ---
 
@@ -82,8 +84,6 @@ bun i r3f-monitor
 logsPerSecond?: number          // Log refresh rate (default: 10)
 
 antialias?: boolean             // Enable text antialiasing
-
-overClock?: boolean             // Disable FPS refresh limit
 
 deepAnalyze?: boolean           // Enable detailed WebGL program inspection
 
@@ -112,6 +112,22 @@ position?:
 
 displayType?: "tab" | "classic" // Default: "tab"
 ```
+
+## 📐 Measurement Engine
+
+Starting with **v2**, the FPS / CPU / GPU values come from a reworked measurement core:
+
+- **FPS** — counted over a real 1-second sliding window and reported as a continuous value (smoothed with a light EMA), so the readout stays stable instead of flickering ±1.
+- **CPU** — wall-clock time of the render phase, accumulated per frame via `performance.now()`.
+- **GPU** — measured with a WebGL2 timer-query queue (`EXT_disjoint_timer_query_webgl2`). Results are reported in **true milliseconds** (no scaling fudge). WebGL2 only.
+
+The bar graph (`graphType: "bar"`) scrolls left as new samples arrive and uses a fixed (high-water) vertical scale, with a gradient fill per metric.
+
+## ⬆️ Migrating from v1.x
+
+- **Overclock removed.** The `overClock` prop and the V-Sync-bypass FPS estimation no longer exist. Remove `overClock` from your `<PerfMonitor />` props. If you need it, pin to `r3f-monitor@1.2.0`.
+- **GPU values changed.** GPU time is now reported as real milliseconds. If you compared against the old (scaled) numbers, re-baseline your thresholds.
+- **No API changes otherwise.** All other props behave the same.
 
 ## Usage
 

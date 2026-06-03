@@ -64,7 +64,6 @@ export const PerfTab: FC<PerfPropsGui> = (props) => {
     matrixUpdate,
     graphType,
     position,
-    overClock,
   } = props;
 
   const [tab, setTab] = useState<"perf" | "res">("perf");
@@ -81,7 +80,6 @@ export const PerfTab: FC<PerfPropsGui> = (props) => {
   const [localGraphType, setLocalGraphType] = useState<"bar" | "line">(
     graphType as "bar" | "line",
   );
-  const [localOverClock, setLocalOverClock] = useState(overClock ?? false);
 
   const perfContainerRef = useRef<HTMLDivElement>(null);
 
@@ -101,7 +99,6 @@ export const PerfTab: FC<PerfPropsGui> = (props) => {
         {...props}
         deepAnalyze={localDeepAnalyze}
         matrixUpdate={localMatrixUpdate}
-        overClock={localOverClock}
       />
       <HtmlMinimal name="r3f-perf">
         <div className={`${s.perfWrapper} ${posClass}`}>
@@ -184,11 +181,6 @@ export const PerfTab: FC<PerfPropsGui> = (props) => {
                       label="Matrix Update"
                       checked={localMatrixUpdate}
                       onChange={setLocalMatrixUpdate}
-                    />
-                    <SettingCheckbox
-                      label="Over Clock"
-                      checked={localOverClock}
-                      onChange={setLocalOverClock}
                     />
                     <SettingCheckbox
                       label="Show Graph"

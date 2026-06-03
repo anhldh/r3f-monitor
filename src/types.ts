@@ -7,7 +7,6 @@ export type chart = {
 
 export interface PerfProps {
   logsPerSecond?: number;
-  overClock?: boolean;
   matrixUpdate?: boolean;
   chart?: chart;
   deepAnalyze?: boolean;

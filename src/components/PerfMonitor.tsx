@@ -15,7 +15,6 @@ export const PerfMonitor: FC<PerfPropsGui> = (rawProps) => {
     minimal: false,
     antialias: true,
     openByDefault: true,
-    overClock: false,
     ...rawProps,
   };
 
