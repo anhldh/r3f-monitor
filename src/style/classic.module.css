@@ -29,7 +29,7 @@
 .perfIContainer {
   display: flex;
   flex-wrap: wrap;
-  gap: 3px 8px;
+  gap: 3px 12px;
   width: 100%;
   padding-right: 4px;
   box-sizing: border-box;

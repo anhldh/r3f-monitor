@@ -60,6 +60,7 @@ export class GLPerf {
   // --- statgl FPS: sliding window 1s thật ---
   protected frameTimes: number[] = [];
   protected frameTimesHead = 0;
+  protected smoothFps = 0; // EMA để số FPS không nhảy +/-1
 
   // --- statgl CPU: performance.now() cộng dồn ---
   protected cpuStartTime = 0;
@@ -102,7 +103,8 @@ export class GLPerf {
   }
 
   /**
-   * statgl: đếm số frame thực sự trong cửa sổ 1 giây vừa qua.
+   * FPS số thực trên cửa sổ 1 giây (frameCount * 1000 / elapsed).
+   * Trả số lẻ (vd 120.3) thay vì đếm nguyên -> không nhảy +/-1.
    */
   protected calculateFps(): number {
     const currentTime = this.now();
@@ -123,7 +125,16 @@ export class GLPerf {
       this.frameTimesHead = 0;
     }
 
-    return Math.round(this.frameTimes.length - this.frameTimesHead);
+    const count = this.frameTimes.length - this.frameTimesHead;
+    if (count < 2) return count;
+
+    // elapsed = khoảng thời gian giữa mẫu cũ nhất và mới nhất trong cửa sổ
+    const oldest = this.frameTimes[this.frameTimesHead];
+    const elapsed = currentTime - oldest;
+    if (elapsed <= 0) return count;
+
+    // (count - 1) khoảng cách trong elapsed ms
+    return ((count - 1) * 1000) / elapsed;
   }
 
   /**
@@ -135,7 +146,11 @@ export class GLPerf {
     const t = now || this.now();
     const duration = t - this.paramTime;
 
-    const fps = this.calculateFps();
+    const rawFps = this.calculateFps();
+    // EMA: làm mượt FPS hiển thị (giống cảm giác ổn định của stats-gl).
+    this.smoothFps =
+      this.smoothFps === 0 ? rawFps : this.smoothFps + 0.1 * (rawFps - this.smoothFps);
+    const fps = this.smoothFps;
     const gpu = this.totalGpuDuration;
     const cpu = this.totalCpuDuration;
 
@@ -341,6 +356,7 @@ export class GLPerf {
     this.gpuQueries.length = 0;
     this.frameTimes.length = 0;
     this.frameTimesHead = 0;
+    this.smoothFps = 0;
     this.totalCpuDuration = 0;
     this.totalGpuDuration = 0;
   }
