@@ -4,6 +4,28 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## 2.1.0 - 2026-06-30
+
+### Added
+
+- **Headless mode.** Bring your own UI and/or drive adaptive quality without the
+  built-in panel:
+  - **`<PerfHeadless />`** — runs the measurement engine only, no UI. Place it
+    inside `<Canvas>`. Accepts `logsPerSecond`, plus `fpsTiers` + `onTierChange`
+    for adaptive quality.
+  - **`usePerfData()`** — read the live metrics from anywhere (works outside
+    `<Canvas>`). Call with no args for the full snapshot, or pass a selector
+    (`usePerfData((d) => d.fps)`) to subscribe to a single field and avoid
+    unnecessary re-renders.
+  - **Adaptive quality** — pass `fpsTiers` to `<PerfHeadless />` and receive
+    `onTierChange` callbacks when the sustained FPS crosses a tier boundary.
+
+### Changed
+
+- Internal refactor to share the measurement store between `<PerfMonitor />` and
+  `<PerfHeadless />`. No behavior change for existing `<PerfMonitor />` users; no
+  API changes.
+
 ## 2.0.0 - 2026-06-02
 
 Reworked measurement core. The `1.x` line (last release `1.2.0`) is now closed
