@@ -6,7 +6,7 @@
 
 An advanced, easy-to-use performance monitoring tool for [@react-three/fiber](https://github.com/pmndrs/react-three-fiber) applications.
 
-Add the <code>&lt;PerfMonitor /&gt;</code> component anywhere in your R3F Canvas.
+Add the <code>&lt;PerfMonitor /&gt;</code> component anywhere in your R3F Canvas — or go **headless** and bring your own UI.
 
 ## Display Modes
 
@@ -53,6 +53,7 @@ Live example:
 
 - **Comprehensive Metrics:** Monitor FPS, CPU/GPU render times, and JS Heap Memory.
 - **Accurate Measurement Engine (v2):** FPS via a real 1-second sliding window, CPU via `performance.now()` accumulation, and GPU via a WebGL2 timer-query queue (`EXT_disjoint_timer_query_webgl2`) reporting true milliseconds.
+- **Headless Mode (v2.1):** Run the measurement engine without the built-in UI. Read live metrics with `usePerfData()` and drive adaptive quality with `fpsTiers`.
 - **VRAM Estimation:** Get an estimated breakdown of your GPU memory usage (Textures and Geometries).
 - **Deep Analysis:** Inspect individual WebGL programs, toggle visibility, and track matrix updates.
 - **Flexible UI:** Choose between graphical visualizations, detailed lists, or a minimal condensed view.
@@ -123,11 +124,100 @@ Starting with **v2**, the FPS / CPU / GPU values come from a reworked measuremen
 
 The bar graph (`graphType: "bar"`) scrolls left as new samples arrive and uses a fixed (high-water) vertical scale, with a gradient fill per metric.
 
-## ⬆️ Migrating from v1.x
+---
 
-- **Overclock removed.** The `overClock` prop and the V-Sync-bypass FPS estimation no longer exist. Remove `overClock` from your `<PerfMonitor />` props. If you need it, pin to `r3f-monitor@1.2.0`.
-- **GPU values changed.** GPU time is now reported as real milliseconds. If you compared against the old (scaled) numbers, re-baseline your thresholds.
-- **No API changes otherwise.** All other props behave the same.
+## 🎛 Bring your own UI (Headless)
+
+> Added in **v2.1**
+
+The default `<PerfMonitor />` ships a ready-made UI. If you want to design your own
+interface — or adjust quality based on FPS — use **headless mode**:
+`<PerfHeadless />` handles the measurement, you do the rest.
+
+There are exactly two things you need:
+
+1. **Read the values to display** → `usePerfData()`
+2. **Change quality based on FPS** (adaptive) → `fpsTiers` + `onTierChange` on `<PerfHeadless />`
+
+The one rule: place `<PerfHeadless />` somewhere **inside `<Canvas>`**.
+
+### 1) Read the values — `usePerfData()`
+
+A single hook, updating at `logsPerSecond` (default ~10×/sec, not every frame). The
+component reading the data can live **outside** `<Canvas>` — it only reads the store,
+no `useThree` required.
+
+Call with no args → returns **all** the metrics:
+
+```ts
+const {
+  fps,
+  cpu,
+  gpu,
+  mem,
+  vram, // the "hot" numbers
+  gl, // { calls, triangles, points, lines, geometries, textures, programs }
+  infos, // { version, renderer, vendor }
+} = usePerfData();
+```
+
+| Field   | Unit     | Meaning                                    |
+| ------- | -------- | ------------------------------------------ |
+| `fps`   | frames/s | frames per second                          |
+| `cpu`   | ms       | CPU time per frame                         |
+| `gpu`   | ms       | GPU time per frame (WebGL2)                |
+| `mem`   | MB       | JS heap in use                             |
+| `vram`  | MB       | estimated VRAM from the scene              |
+| `gl`    | —        | render stats for the latest frame          |
+| `infos` | —        | renderer/vendor (constant for the session) |
+
+Or pass a **selector** to read only the field you need — the component only
+re-renders when that field changes (avoids wasted re-renders when displaying a
+single number):
+
+```tsx
+const fps = usePerfData((d) => d.fps);
+```
+
+```tsx
+import { Canvas } from "@react-three/fiber";
+import { PerfHeadless, usePerfData } from "r3f-monitor";
+
+// Custom UI — place OUTSIDE <Canvas>
+function MyHud() {
+  const { fps, cpu, gpu, mem, vram, gl } = usePerfData();
+  return (
+    <div
+      style={{ position: "fixed", top: 12, left: 12, font: "12px monospace" }}
+    >
+      <div>{fps.toFixed(0)} FPS</div>
+      <div>
+        CPU {cpu.toFixed(1)} ms · GPU {gpu.toFixed(1)} ms
+      </div>
+      <div>
+        RAM {mem.toFixed(0)} MB · VRAM {vram.toFixed(1)} MB
+      </div>
+      <div>
+        {gl.calls} calls · {gl.triangles} tris
+      </div>
+    </div>
+  );
+}
+
+export default function App() {
+  return (
+    <>
+      <Canvas>
+        <PerfHeadless logsPerSecond={10} />
+        {/* <YourScene /> */}
+      </Canvas>
+      <MyHud />
+    </>
+  );
+}
+```
+
+---
 
 ## Usage
 

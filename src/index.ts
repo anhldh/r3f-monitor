@@ -14,11 +14,3 @@ export { PerfHeadless } from "./components/PerfHeadless";
  * - `usePerfData(d => d.fps)` → lấy đúng field cần (chỉ re-render khi field đổi).
  */
 export { usePerfData, type PerfData } from "./hooks/usePerfData";
-
-// Types cho adaptive quality (fpsTiers + onTierChange)
-export type {
-  TierChangeHandler,
-  PerfContext,
-  PerfProps,
-  PerfPropsGui,
-} from "./types";
