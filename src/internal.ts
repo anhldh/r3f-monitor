@@ -18,6 +18,7 @@ interface LogsAccums {
   gpu: number[];
   cpu: number[];
   fps: number[];
+  rawFps: number[];
 }
 
 const average = (arr: number[]) =>
@@ -34,6 +35,7 @@ export class GLPerf {
     gpu: [],
     cpu: [],
     fps: [],
+    rawFps: [],
   };
   fpsChart: number[] = [];
   gpuChart: number[] = [];
@@ -149,7 +151,9 @@ export class GLPerf {
     const rawFps = this.calculateFps();
     // EMA: làm mượt FPS hiển thị (giống cảm giác ổn định của stats-gl).
     this.smoothFps =
-      this.smoothFps === 0 ? rawFps : this.smoothFps + 0.1 * (rawFps - this.smoothFps);
+      this.smoothFps === 0
+        ? rawFps
+        : this.smoothFps + 0.1 * (rawFps - this.smoothFps);
     const fps = this.smoothFps;
     const gpu = this.totalGpuDuration;
     const cpu = this.totalCpuDuration;
@@ -175,6 +179,7 @@ export class GLPerf {
 
         this.logsAccums.mem.push(this.currentMem);
         this.logsAccums.fps.push(fps);
+        this.logsAccums.rawFps.push(rawFps);
         this.logsAccums.gpu.push(gpu);
         this.logsAccums.cpu.push(cpu);
 
@@ -184,6 +189,8 @@ export class GLPerf {
             gpu: average(this.logsAccums.gpu),
             mem: average(this.logsAccums.mem),
             fps: average(this.logsAccums.fps),
+            // FPS chưa qua EMA — cho adaptive quality phản ứng nhanh
+            rawFps: average(this.logsAccums.rawFps),
             duration: Math.round(duration),
             maxMemory: this.maxMemory,
             frameCount,
@@ -191,6 +198,7 @@ export class GLPerf {
 
           this.logsAccums.mem = [];
           this.logsAccums.fps = [];
+          this.logsAccums.rawFps = [];
           this.logsAccums.gpu = [];
           this.logsAccums.cpu = [];
 
@@ -344,13 +352,17 @@ export class GLPerf {
         gl.deleteQuery(this.activeQuery);
         this.activeQuery = null;
       }
-    } catch {}
+    } catch {
+      /* empty */
+    }
 
     if (gl) {
       for (const queryInfo of this.gpuQueries) {
         try {
           gl.deleteQuery(queryInfo.query);
-        } catch {}
+        } catch {
+          /* empty */
+        }
       }
     }
     this.gpuQueries.length = 0;
