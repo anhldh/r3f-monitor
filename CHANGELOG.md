@@ -4,6 +4,51 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## 2.2.0 - 2026-07-14
+
+### Added
+
+- **Adaptive quality.**
+  - **`<PerfAdaptive />`** — automatically raises/lowers a quality `factor`
+    (0–1) based on sustained FPS. API mirrors drei's `<PerformanceMonitor>`
+    (`iterations`, `threshold`, `step`, `bounds`, `flipflops`,
+    `onIncline` / `onDecline` / `onChange` / `onFallback`), so existing code
+    ports 1:1. It renders nothing and only listens to the measurement engine —
+    mount `<PerfHeadless />` or `<PerfMonitor />` alongside it.
+  - **`usePerfAdaptive()`** — hook for children of `<PerfAdaptive />`,
+    equivalent of drei's `usePerformanceMonitor`.
+  - **`AdaptiveEngine`** — the decision core as a plain framework-agnostic
+    class (`addSample(fps, gpu?, cpu?)`), usable without React.
+  - Each sample carries the real **GPU/CPU render times**, so callbacks can
+    tell GPU-bound from CPU-bound and pick the right quality lever.
+- **`useGpuTier()`** (+ drei-compatible alias `useDetectGPU`, render-prop
+  component `<GpuTier>`) — suspending wrapper around `@pmndrs/detect-gpu` to
+  pick a sensible starting quality per device.
+- **`detectRefreshRate()`** — measures the display refresh rate from the rAF
+  cadence (median of the shortest frame intervals, robust to mount jank).
+  `<PerfAdaptive />` runs it automatically to seed the engine's `refreshrate`
+  (refined by the highest FPS seen), so FPS bounds are right even when the
+  scene is heavy from the very first frame.
+- Adaptive decisions run **before** the next frame renders (queued from the
+  measurement tick, flushed pre-frame), so quality changes like `setDpr` never
+  composite a cleared buffer — no one-frame flash.
+- The engine consumes **raw (non-EMA) FPS**, reacting to sudden drops in
+  ~1s instead of several seconds; the UI keeps showing the smoothed value.
+
+### Changed
+
+- **Measurement core extracted into a ref-counted singleton** (`perfCore`).
+  Mounting several measuring components at once (e.g. `<PerfHeadless />` +
+  `<PerfMonitor />`, or toggling the UI on/off) now runs exactly **one**
+  engine — no more conflicting GPU timer queries, doubled log events, or
+  double-counted accumulated stats. The first mount's options win; a console
+  warning is logged if a later mount passes different options. No API change.
+
+### Fixed
+
+- Docs: `fpsTiers` / `onTierChange` were documented in 2.1.0 but never
+  shipped. Adaptive quality is now provided by `<PerfAdaptive />`.
+
 ## 2.1.0 - 2026-06-30
 
 ### Added

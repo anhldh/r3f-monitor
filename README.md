@@ -53,7 +53,8 @@ Live example:
 
 - **Comprehensive Metrics:** Monitor FPS, CPU/GPU render times, and JS Heap Memory.
 - **Accurate Measurement Engine (v2):** FPS via a real 1-second sliding window, CPU via `performance.now()` accumulation, and GPU via a WebGL2 timer-query queue (`EXT_disjoint_timer_query_webgl2`) reporting true milliseconds.
-- **Headless Mode (v2.1):** Run the measurement engine without the built-in UI. Read live metrics with `usePerfData()` and drive adaptive quality with `fpsTiers`.
+- **Headless Mode (v2.1):** Run the measurement engine without the built-in UI. Read live metrics with `usePerfData()`.
+- **Adaptive Quality (v2.2):** `<PerfAdaptive />` automatically raises/lowers a quality `factor` (0–1) based on sustained FPS — drei `<PerformanceMonitor>`-compatible API, plus real GPU/CPU times to tell GPU-bound from CPU-bound. Pair with `useGpuTier()` for a per-device starting quality.
 - **VRAM Estimation:** Get an estimated breakdown of your GPU memory usage (Textures and Geometries).
 - **Deep Analysis:** Inspect individual WebGL programs, toggle visibility, and track matrix updates.
 - **Flexible UI:** Choose between graphical visualizations, detailed lists, or a minimal condensed view.
@@ -137,7 +138,7 @@ interface — or adjust quality based on FPS — use **headless mode**:
 There are exactly two things you need:
 
 1. **Read the values to display** → `usePerfData()`
-2. **Change quality based on FPS** (adaptive) → `fpsTiers` + `onTierChange` on `<PerfHeadless />`
+2. **Change quality based on FPS** → `<PerfAdaptive />` (see [Adaptive Quality](#-adaptive-quality))
 
 The one rule: place `<PerfHeadless />` somewhere **inside `<Canvas>`**.
 
@@ -219,6 +220,117 @@ export default function App() {
 
 ---
 
+## 🎚 Adaptive Quality
+
+> Added in **v2.2**
+
+`<PerfAdaptive />` watches the sustained FPS coming from the measurement engine and
+maintains a quality **factor between 0 and 1**. When the device comfortably exceeds
+the upper FPS bound the factor steps up (_incline_); when it stays under the lower
+bound it steps down (_decline_). You map the factor to whatever costs performance:
+`dpr`, shadow map size, post-processing, draw distance…
+
+The API mirrors drei's `<PerformanceMonitor>`, so existing code ports 1:1.
+
+The one rule: mount a measuring component — `<PerfHeadless />` or `<PerfMonitor />` —
+inside `<Canvas>`. `<PerfAdaptive />` itself renders nothing and only listens
+(1 FPS sample per engine log tick, ~10/s by default).
+
+```tsx
+import { useState } from "react";
+import { Canvas } from "@react-three/fiber";
+import { PerfHeadless, PerfAdaptive } from "r3f-monitor";
+
+export default function App() {
+  const [dpr, setDpr] = useState(1);
+  return (
+    <Canvas dpr={dpr}>
+      <PerfHeadless />
+      <PerfAdaptive onChange={(e) => setDpr(0.5 + e.factor * 1.5)} />
+      {/* <YourScene /> */}
+    </Canvas>
+  );
+}
+```
+
+### Options
+
+| Prop         | Default                                     | Meaning                                                      |
+| ------------ | ------------------------------------------- | ------------------------------------------------------------ |
+| `iterations` | `10`                                        | Samples collected before each decision                       |
+| `threshold`  | `0.75`                                      | Fraction of samples that must cross a bound to trigger       |
+| `step`       | `0.1`                                       | Amount added/subtracted from `factor`                        |
+| `factor`     | `0.5`                                       | Starting factor                                              |
+| `flipflops`  | `Infinity`                                  | Max incline/decline flips before `onFallback` fires          |
+| `bounds`     | `(hz) => (hz > 100 ? [60, 100] : [40, 60])` | `[lower, upper]` FPS bounds, given the observed refresh rate |
+
+The refresh rate is auto-detected from the rAF cadence at mount and refined by the
+highest FPS seen during the session — no configuration needed.
+
+### Callbacks
+
+Every callback receives the engine: `{ fps, factor, refreshrate, gpu, cpu, fallback, … }`.
+
+- `onIncline(e)` — sustained FPS above the upper bound: the device has headroom.
+- `onDecline(e)` — sustained FPS below the lower bound: reduce quality.
+- `onChange(e)` — the factor changed, in either direction.
+- `onFallback(e)` — flipped more than `flipflops` times: performance is unstable, set a fixed low baseline.
+
+**GPU-bound or CPU-bound?** Each sample carries the real render times (ms), so you
+can pull the _right_ lever:
+
+```tsx
+<PerfAdaptive
+  onDecline={(e) => {
+    if (e.gpu > e.cpu)
+      lowerResolution(); // GPU-bound → dpr/effects help
+    else reduceDrawCalls(); // CPU-bound → dpr won't help
+  }}
+/>
+```
+
+### Hook
+
+Children of `<PerfAdaptive>` can subscribe with `usePerfAdaptive` — the equivalent
+of drei's `usePerformanceMonitor`:
+
+```tsx
+usePerfAdaptive({ onChange: (e) => setQuality(e.factor) });
+```
+
+The decision core is also exported as a plain class, `AdaptiveEngine`
+(`addSample(fps, gpu?, cpu?)`), if you want to feed it samples yourself.
+
+### Starting quality — `useGpuTier()`
+
+Runtime adaptation only reacts _after_ the first slow frames. To start at a
+sensible quality per device, use `useGpuTier()` — a suspending wrapper around
+[`@pmndrs/detect-gpu`](https://github.com/pmndrs/detect-gpu):
+
+```tsx
+import { Suspense } from "react";
+import { useGpuTier } from "r3f-monitor";
+
+function Effects() {
+  const { tier } = useGpuTier(); // 0 (weakest) … 3 (strongest)
+  return tier >= 2 ? <FancyPostProcessing /> : null;
+}
+
+// <Suspense fallback={null}><Effects /></Suspense>
+```
+
+`useDetectGPU` is exported as a drei-compatible alias, and `<GpuTier>` offers a
+render-prop version. The component calling the hook must be under `<Suspense>`.
+
+### One engine, no conflicts
+
+Since **v2.2** the measurement core is a ref-counted singleton: mounting
+`<PerfHeadless />` and `<PerfMonitor />` at the same time — or toggling the UI
+on and off — always runs exactly **one** engine. The first mount's options win;
+a console warning is logged if a later mount passes different options.
+
+---
+
 ## Usage
 
 **[View Example](https://codesandbox.io/p/sandbox/3sqpy4)**
@@ -242,4 +354,6 @@ function App() {
 
 ### Thanks
 
-Special thanks to [`twitter @utsuboco`](https://twitter.com/utsuboco). This library is a port/fork based on the original [r3f-perf](https://github.com/utsuboco/r3f-perf) library.
+Special thanks to [`twitter @utsuboco`](https://twitter.com/utsuboco).
+
+r3f-monitor was originally based on the excellent [r3f-perf](https://github.com/utsuboco/r3f-perf) project and has since evolved with additional metrics, components, UI improvements, and various enhancements.
