@@ -96,7 +96,7 @@ const getCustomData = () => {
   return getPerf().customData;
 };
 
-export const usePerfImpl = createWithEqualityFn<State>((set, get): any => {
+export const usePerfImpl = createWithEqualityFn<State>((_set, get): any => {
   function getReport() {
     const { accumulated, startTime, infos, estimatedMemory } = get();
     const maxMemory = get().log?.maxMemory;

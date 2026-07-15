@@ -1,6 +1,4 @@
 import type { HTMLAttributes } from "react";
-import type * as THREE from "three";
-import type { PerfData } from "./hooks/usePerfData";
 
 export type chart = {
   length: number;
