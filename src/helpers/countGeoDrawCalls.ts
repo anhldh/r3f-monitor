@@ -6,11 +6,15 @@ export const countGeoDrawCalls = (programs: ProgramsPerfs) => {
     if (!meshes) {
       return;
     }
+
     const drawCounts: drawCounts = {
       total: 0,
       type: "Triangle",
       data: [],
     };
+    // Type của mesh có drawCount lớn nhất sẽ đại diện cho program
+    let mostDrawCalls = 0;
+
     Object.keys(meshes).forEach((key) => {
       const mesh: any = meshes[key];
       const { geometry, material } = mesh;
@@ -20,44 +24,42 @@ export const countGeoDrawCalls = (programs: ProgramsPerfs) => {
 
       if (!position) return;
 
-      let rangeFactor = 1;
-
-      if (material.wireframe === true) {
-        rangeFactor = 0;
-      }
+      const rangeFactor = material.wireframe === true ? 0 : 1;
 
       const dataCount = index !== null ? index.count : position.count;
       const rangeStart = geometry.drawRange.start * rangeFactor;
       const rangeCount = geometry.drawRange.count * rangeFactor;
       const drawStart = rangeStart;
       const drawEnd = Math.min(dataCount, rangeStart + rangeCount) - 1;
-      let countInstanceRatio = 1;
+
       const instanceCount = mesh.count || 1;
+      let countInstanceRatio = 1;
       let type = "Triangle";
-      let mostDrawCalls = 0;
+
       if (mesh.isMesh) {
         if (material.wireframe === true) {
           type = "Line";
-          countInstanceRatio = countInstanceRatio / 2;
+          countInstanceRatio /= 2;
         } else {
           type = "Triangle";
-          countInstanceRatio = countInstanceRatio / 3;
+          countInstanceRatio /= 3;
         }
       } else if (mesh.isLine) {
         type = "Line";
         if (mesh.isLineSegments) {
-          countInstanceRatio = countInstanceRatio / 2;
+          countInstanceRatio /= 2;
         } else if (mesh.isLineLoop) {
-          countInstanceRatio = countInstanceRatio;
+          // LineLoop: mỗi vertex tạo 1 segment (khép vòng) — ratio giữ nguyên 1
         } else {
-          countInstanceRatio = countInstanceRatio - 1;
+          // Line: n vertex → n-1 segments (giữ nguyên công thức từ bản gốc)
+          countInstanceRatio -= 1;
         }
       } else if (mesh.isPoints) {
+        // Points: mỗi vertex 1 point — ratio giữ nguyên 1
         type = "Point";
-        countInstanceRatio = countInstanceRatio;
       } else if (mesh.isSprite) {
         type = "Triangle";
-        countInstanceRatio = countInstanceRatio / 3;
+        countInstanceRatio /= 3;
       }
 
       const drawCount = Math.round(
@@ -76,6 +78,7 @@ export const countGeoDrawCalls = (programs: ProgramsPerfs) => {
         count: drawCount,
       };
     });
+
     program.drawCounts = drawCounts;
   });
 };
