@@ -1,0 +1,57 @@
+import { Meta, Title, Subtitle, Source } from '@storybook/addon-docs/blocks';
+import { InstallGuide } from './InstallGuide';
+
+<Meta title="R3F Monitor/Overview" />
+
+<Title>R3F Monitor</Title>
+<Subtitle>Runtime performance monitoring for React Three Fiber.</Subtitle>
+
+R3F Monitor measures FPS, CPU/GPU frame time, heap usage, estimated VRAM, draw calls,
+triangles, textures, geometries and WebGL programs. Use the built-in monitor while
+debugging, or run the same engine headlessly and build your own interface.
+
+<InstallGuide />
+
+## Quick start
+
+Place `PerfMonitor` anywhere inside your R3F `Canvas`. The default display is the tab UI.
+
+<Source
+  language="tsx"
+  code={`import { Canvas } from "@react-three/fiber";
+import { PerfMonitor } from "r3f-monitor";
+
+export default function App() {
+  return (
+    <Canvas>
+      <PerfMonitor />
+      <YourScene />
+    </Canvas>
+  );
+}`}
+/>
+
+## Choose a workflow
+
+- **Ready-made debugging UI:** `PerfMonitor`
+- **Compact traditional panel:** `<PerfMonitor displayType="classic" />`
+- **Custom dashboard or telemetry:** `PerfHeadless` + `usePerfData`
+- **Runtime quality scaling:** `PerfAdaptive` / `usePerfAdaptive`
+- **Device-based starting quality:** `useGpuTier` / `GpuTier`
+- **Framework-free quality decisions:** `AdaptiveEngine`
+
+## What is measured
+
+- **FPS** uses a real one-second sliding window with light smoothing.
+- **CPU** is render-phase wall time per frame.
+- **GPU** uses WebGL2 timer queries and is reported in milliseconds.
+- **VRAM** is estimated from textures and geometries currently in the scene.
+- **Render stats** include calls, triangles, points, lines, textures, geometries and programs.
+
+GPU timing requires WebGL2 and timer-query support. Unsupported browsers can still report
+the remaining metrics.
+
+## Display modes
+
+Open **Components / PerfMonitor** for live Tab, Classic, Minimal, line graph and deep-analysis
+examples. Each example uses only R3F and Three primitives—no external model assets are needed.
