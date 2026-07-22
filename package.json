@@ -51,7 +51,9 @@
         "dev": "vite build --watch",
         "typecheck": "tsc --noEmit",
         "build": "npm run typecheck && vite build",
-        "lint": "eslint ."
+        "lint": "eslint .",
+        "storybook": "storybook dev --docs -p 6006",
+        "build-storybook": "storybook build --docs"
     },
     "peerDependencies": {
         "@react-three/fiber": ">=8",
@@ -79,6 +81,10 @@
         "vite": "^5.4.0",
         "vite-plugin-css-injected-by-js": "^3.5.2",
         "vite-plugin-dts": "^5.0.3",
-        "zustand": "^5.0.14"
+        "zustand": "^5.0.14",
+        "storybook": "^10.5.3",
+        "@storybook/react-vite": "^10.5.3",
+        "@storybook/addon-docs": "^10.5.3",
+        "eslint-plugin-storybook": "^10.5.3"
     }
 }

@@ -1,5 +1,6 @@
 # Dependencies
 node_modules
+.pnpm-store
 .pnp
 .pnp.js
 
@@ -45,3 +46,5 @@ coverage
 # Vite specific
 vite.config.ts.timestamp-*
 vite.config.js.timestamp-*
+*storybook.log
+storybook-static
