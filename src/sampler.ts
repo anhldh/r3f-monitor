@@ -89,7 +89,7 @@ export class PerfSampler {
   // FPS: 1s sliding window
   private frameTimes: number[] = [];
   private frameTimesHead = 0;
-  private smoothFps = 0;
+  private lastFrameTime = 0;
 
   // CPU: accumulated performance.now() deltas
   private cpuStartTime = 0;
@@ -152,6 +152,7 @@ export class PerfSampler {
     this.paramTime = t;
     this.paramFrame = this.frameId;
     this.chartTime = t;
+    this.lastFrameTime = 0;
     this.totalCpuDuration = 0;
     this.logsAccums = {
       mem: [],
@@ -182,12 +183,12 @@ export class PerfSampler {
     const duration = t - this.paramTime;
 
     const rawFps = this.calculateFps();
-    // EMA smoothing for displayed FPS
-    this.smoothFps =
-      this.smoothFps === 0
-        ? rawFps
-        : this.smoothFps + 0.1 * (rawFps - this.smoothFps);
-    const fps = this.smoothFps;
+    // Per-frame FPS for display, so single slow frames show up in the chart
+    const fps =
+      this.lastFrameTime > 0 && t > this.lastFrameTime
+        ? 1000 / (t - this.lastFrameTime)
+        : rawFps;
+    this.lastFrameTime = t;
     const cpu = this.totalCpuDuration;
 
     if (this.frameId <= 1) {
@@ -283,7 +284,7 @@ export class PerfSampler {
   dispose() {
     this.frameTimes.length = 0;
     this.frameTimesHead = 0;
-    this.smoothFps = 0;
+    this.lastFrameTime = 0;
     this.totalCpuDuration = 0;
   }
 }

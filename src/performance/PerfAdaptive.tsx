@@ -71,7 +71,7 @@ export function PerfAdaptive({
 
   // Sole data source: the "log" event emitted by PerfHeadless.
   // While paused (hidden tab / idle loop) paramLogger stops -> no bogus samples.
-  // Prefer rawFps (pre-EMA) to catch drops quickly; the UI still uses smoothed fps.
+  // Prefer rawFps (1s window) for stable adaptation; the UI uses per-frame fps.
   //
   // "log" fires from addAfterEffect (AFTER the frame is drawn) — running callbacks
   // there would let setDpr resize (clear) the buffer post-render -> 1-frame flicker.

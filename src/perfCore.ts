@@ -287,13 +287,13 @@ function createCore(
   });
 
   // AFTER frame: stop timing + commit frame + deepAnalyze
-  const unsubAfter = addAfterEffect(() => {
+  const unsubAfter = addAfterEffect((timestamp) => {
     backend.endFrame();
     sampler.end();
 
     if (!sampler.paused) {
       const gpu = backend.readGpuTiming();
-      sampler.nextFrame(window.performance.now(), gpu.render, gpu.compute);
+      sampler.nextFrame(timestamp, gpu.render, gpu.compute);
     }
 
     const now = window.performance.now();
