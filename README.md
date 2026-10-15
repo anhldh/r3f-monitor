@@ -124,7 +124,7 @@ displayType?: "tab" | "classic" // Default: "tab"
 
 Starting with **v2**, the FPS / CPU / GPU values come from a reworked measurement core:
 
-- **FPS** — counted over a real 1-second sliding window and reported as a continuous value (smoothed with a light EMA), so the readout stays stable instead of flickering ±1.
+- **FPS** — counted over a real 1-second sliding window and reported as a continuous value, so the readout stays stable instead of flickering ±1. The graph also dips on single slow frames.
 - **CPU** — wall-clock time of the render phase, accumulated per frame via `performance.now()`.
 - **GPU** — GPU time for the render pass, in **true milliseconds** (no scaling fudge). The mechanism depends on the renderer: a WebGL2 timer-query queue (`EXT_disjoint_timer_query_webgl2`) on `WebGLRenderer`, three's timestamp queries on `WebGPURenderer`. Both are read back asynchronously, so the value trails the current frame by a frame or two.
 
