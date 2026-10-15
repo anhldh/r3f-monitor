@@ -8,7 +8,7 @@ import {
   useState,
 } from "react";
 import { addEffect } from "@react-three/fiber";
-import { useEvent } from "../events/react";
+import { usePerfInstance } from "../store";
 import { detectRefreshRate } from "./detectRefreshRate";
 import {
   AdaptiveEngine,
@@ -17,6 +17,8 @@ import {
 } from "./AdaptiveEngine";
 
 export type PerfAdaptiveProps = AdaptiveEngineOptions & {
+  /** Which canvas to follow when several are measured — see `usePerfData`. */
+  id?: string;
   /** Children can use the usePerfAdaptive hook */
   children?: React.ReactNode;
 };
@@ -39,6 +41,7 @@ const context = /* @__PURE__ */ createContext<AdaptiveEngine>(null!);
  */
 export function PerfAdaptive({
   children,
+  id,
   onIncline,
   onDecline,
   onChange,
@@ -46,6 +49,7 @@ export function PerfAdaptive({
   ...options
 }: PerfAdaptiveProps) {
   const [engine] = useState(() => new AdaptiveEngine(options));
+  const { events } = usePerfInstance(id);
 
   // Seed refresh rate early from rAF timing — otherwise a scene that's heavy from
   // the start never shows high FPS and the engine learns the wrong refresh rate.
@@ -78,9 +82,13 @@ export function PerfAdaptive({
   // So samples are only queued here and flushed in addEffect (BEFORE render), so
   // user changes land in the same frame — same as drei.
   const queue = useRef<LogSample[]>([]);
-  useEvent("log", ([log]: [LogSample, unknown]) => {
-    queue.current.push(log);
-  });
+  useEffect(() => {
+    const onLog = ([log]: [LogSample, unknown]) => {
+      queue.current.push(log);
+    };
+    events.on("log", onLog);
+    return () => void events.off("log", onLog);
+  }, [events]);
   useEffect(
     () =>
       addEffect(() => {

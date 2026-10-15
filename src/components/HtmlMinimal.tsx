@@ -7,6 +7,9 @@ import React, {
 } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
+import { instanceFor, PerfContext } from "../store";
+import type { AnyRenderer } from "../backends/detect";
+
 interface HtmlProps {
   portal?: React.RefObject<HTMLElement>;
   className?: string;
@@ -41,10 +44,13 @@ const HtmlMinimal = forwardRef<HTMLDivElement, HtmlProps>(
     useLayoutEffect(() => {
       const root = rootRef.current;
       if (!root) return;
+      // A separate React root: hand it the canvas this monitor measures
       root.render(
-        <div ref={ref} className={className}>
-          {children}
-        </div>,
+        <PerfContext.Provider value={instanceFor(gl as AnyRenderer)}>
+          <div ref={ref} className={className}>
+            {children}
+          </div>
+        </PerfContext.Provider>,
       );
     });
 

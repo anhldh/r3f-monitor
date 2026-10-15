@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
-import { getPerf } from "../store";
+import { usePerfInstance, type State } from "../store";
+import { fpsAxisTop } from "./Utils";
 
 type Theme = { fg: string; bg: string };
 const THEMES: Record<"fps" | "cpu" | "gpu", Theme> = {
@@ -52,11 +53,15 @@ export function ChartStats({
   showHeaderText?: boolean;
   hasChange?: boolean;
 }) {
+  const { getState: getPerf } = usePerfInstance().store;
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const [containerWidth, setContainerWidth] = useState(300);
 
   const [activeIndex, setActiveIndex] = useState(0);
+  // Top of the FPS axis once readings outgrow the panel's maxVal (high refresh
+  // rates). Only grows; a change redraws the history at the new scale.
+  const [fpsTop, setFpsTop] = useState(0);
 
   const dpr = useMemo(
     () => Math.max(1, Math.round(window.devicePixelRatio || 1)),
@@ -107,7 +112,8 @@ export function ChartStats({
     const circ = perf.chart.circularId;
 
     for (let p = 0; p < count; p++) {
-      const { key, maxVal } = activePanels[p];
+      const { key, maxVal: floor } = activePanels[p];
+      const maxVal = key === "fps" ? Math.max(floor, fpsTop) : floor;
       const ox = p * (panelW + gap);
       const { fg, bg } = THEMES[key];
 
@@ -142,6 +148,9 @@ export function ChartStats({
         }
       }
       minMaxRef.current[key] = { min, max };
+      if (key === "fps" && fpsAxisTop(max, floor) > maxVal) {
+        setFpsTop(fpsAxisTop(max, floor));
+      }
     }
   }, [
     dpr,
@@ -152,6 +161,8 @@ export function ChartStats({
     count,
     gap,
     dynamicGraphW,
+    getPerf,
+    fpsTop,
   ]);
 
   useEffect(() => {
@@ -162,7 +173,7 @@ export function ChartStats({
 
     let raf = 0;
     let lastTime = 0;
-    let lastChart: ReturnType<typeof getPerf>["chart"] | undefined;
+    let lastChart: State["chart"] | undefined;
 
     function drawFrame(timestamp: number) {
       raf = requestAnimationFrame(drawFrame);
@@ -177,7 +188,8 @@ export function ChartStats({
       lastChart = perf.chart;
 
       for (let p = 0; p < count; p++) {
-        const { key, label, maxVal } = activePanels[p];
+        const { key, label, maxVal: floor } = activePanels[p];
+        const maxVal = key === "fps" ? Math.max(floor, fpsTop) : floor;
         const ox = p * (panelW + gap);
         const { fg, bg } = THEMES[key];
 
@@ -193,6 +205,11 @@ export function ChartStats({
         const mm = minMaxRef.current[key] || { min: Infinity, max: 0 };
         mm.min = Math.min(mm.min, v);
         mm.max = Math.max(mm.max, v);
+
+        if (key === "fps" && fpsAxisTop(mm.max, floor) > maxVal) {
+          setFpsTop(fpsAxisTop(mm.max, floor));
+          return;
+        }
 
         if (!ctx) return;
 
@@ -246,6 +263,8 @@ export function ChartStats({
     count,
     gap,
     showHeaderText,
+    getPerf,
+    fpsTop,
   ]);
 
   if (!show) return null;

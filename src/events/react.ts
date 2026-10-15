@@ -1,9 +1,10 @@
 import { useRef, useEffect } from "react";
 import { onEvent, offEvent } from "./vanilla";
+import { usePerfInstance } from "../store";
 import type { EventHandler, EventOptions } from "./types";
 
 /**
- * React hook for subscribing to events (EventEmitter wrapper).
+ * React hook for subscribing to a canvas's events (EventEmitter wrapper).
  * - Auto cleanup on unmount
  * - No stale closures
  */
@@ -13,6 +14,8 @@ export function useEvent(
   deps: any[] = [],
   options?: EventOptions,
 ): void {
+  const { events } = usePerfInstance();
+
   // Keep the latest handler to avoid stale closures
   const handlerRef = useRef<EventHandler>(handler);
 
@@ -26,13 +29,13 @@ export function useEvent(
     const handlerWrapper = (event: any) => handlerRef.current?.(event);
 
     // Subscribe
-    const context = onEvent(eventName, handlerWrapper, options);
+    const context = onEvent(events, eventName, handlerWrapper, options);
 
     // Cleanup on unmount or deps change
     return () =>
-      offEvent(eventName, handlerWrapper, {
+      offEvent(events, eventName, handlerWrapper, {
         ...options,
         context,
       });
-  }, [eventName, options?.once, ...deps]);
+  }, [events, eventName, options?.once, ...deps]);
 }

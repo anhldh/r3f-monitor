@@ -2,7 +2,7 @@ import { type FC, useRef, useState } from "react";
 
 import { useEvent } from "../events/react";
 import { useHasCompute } from "../hooks/useHasCompute";
-import { setPerf, usePerf } from "../store";
+import { usePerf, usePerfInstance } from "../store";
 import type { PerfPropsGui } from "../types";
 import s from "../style/classic.module.css";
 
@@ -115,6 +115,7 @@ export const PerfClassic: FC<PerfPropsGui> = (props) => {
     graphType,
     style,
     position,
+    id,
     chart,
     logsPerSecond,
     deepAnalyze,
@@ -125,6 +126,7 @@ export const PerfClassic: FC<PerfPropsGui> = (props) => {
 
   const perfContainerRef = useRef<HTMLDivElement>(null);
   const [showMore, setShowMore] = useState(openByDefault ?? false);
+  const { setState: setPerf } = usePerfInstance().store;
   const tab = usePerf((s) => s.tab);
   const gl = usePerf((s) => s.gl);
 
@@ -155,6 +157,7 @@ export const PerfClassic: FC<PerfPropsGui> = (props) => {
   return (
     <>
       <PerfHeadless
+        id={id}
         logsPerSecond={logsPerSecond}
         chart={chart}
         deepAnalyze={deepAnalyze}

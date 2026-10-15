@@ -63,6 +63,8 @@ export class WebGpuPerfBackend implements PerfBackend {
   private scene: THREE.Scene;
   private timingOn = false;
   private lastSignature = "";
+  private autoResetBefore = true;
+  private trackTimestampBefore: boolean | undefined;
 
   // Per-pass timing — hooked lazily, only when deepAnalyze is on.
   private inspector: Record<string, any> | null = null;
@@ -81,6 +83,7 @@ export class WebGpuPerfBackend implements PerfBackend {
   }
 
   start() {
+    this.autoResetBefore = this.gl.info.autoReset;
     this.gl.info.autoReset = false;
 
     // `trackTimestamp` defaults to false and is usually set in `new WebGPURenderer()`.
@@ -90,6 +93,7 @@ export class WebGpuPerfBackend implements PerfBackend {
     // change renderer setup to get GPU timing.
     try {
       if (this.gl.hasFeature("timestamp-query")) {
+        this.trackTimestampBefore = this.gl.backend.trackTimestamp;
         this.gl.backend.trackTimestamp = true;
         this.timingOn = true;
       }
@@ -385,6 +389,13 @@ export class WebGpuPerfBackend implements PerfBackend {
   }
 
   dispose() {
+    // Nobody resets `info` or resolves timestamp queries once the monitor is
+    // gone: hand both back to three as they were.
+    this.gl.info.autoReset = this.autoResetBefore;
+    if (this.timingOn) {
+      this.gl.backend.trackTimestamp = this.trackTimestampBefore;
+    }
+
     this.timingOn = false;
     this.stopAnalysis();
   }

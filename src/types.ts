@@ -6,6 +6,8 @@ export type chart = {
 };
 
 export interface PerfProps {
+  /** Names this canvas for hooks outside it: `usePerfData({ id })`. */
+  id?: string;
   logsPerSecond?: number;
   matrixUpdate?: boolean;
   chart?: chart;
