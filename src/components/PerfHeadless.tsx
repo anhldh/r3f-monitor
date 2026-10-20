@@ -24,14 +24,14 @@ export const PerfHeadless: FC<PerfProps> = ({
   deepAnalyze,
   matrixUpdate,
 }) => {
-  const { gl, scene } = useThree();
+  const { gl, scene, invalidate } = useThree();
 
   const chartLength = chart?.length;
   const chartHz = chart?.hz;
 
   useEffect(
     () =>
-      acquirePerf(gl, scene, {
+      acquirePerf(gl, scene, () => invalidate(), {
         id,
         logsPerSecond,
         deepAnalyze,
@@ -44,6 +44,7 @@ export const PerfHeadless: FC<PerfProps> = ({
     [
       gl,
       scene,
+      invalidate,
       id,
       logsPerSecond,
       chartLength,

@@ -1,9 +1,4 @@
-import {
-  addAfterEffect,
-  addEffect,
-  addTail,
-  invalidate,
-} from "@react-three/fiber";
+import { addAfterEffect, addEffect, addTail } from "@react-three/fiber";
 import * as THREE from "three";
 
 import { PerfSampler, type SampleChart, type SampleLog } from "./sampler";
@@ -25,11 +20,6 @@ const maxGl = ["calls", "triangles", "points", "lines"] as const;
  */
 const ANALYSIS_SETTLE_FRAMES = 4;
 
-/**
- * Requests a frame for frameloop="demand". Deferred: an `invalidate()` issued
- * inside a global after-effect is lost — R3F has already decided to stop the loop.
- */
-const requestFrame = () => queueMicrotask(() => invalidate());
 const maxLog = ["gpu", "cpu", "mem", "fps"] as const;
 
 export const matriceWorldCount = { value: 0 };
@@ -95,7 +85,8 @@ function publishRunning() {
 
 // R3F's global effects wrap ALL roots in a tick, so each canvas is timed from
 // its own first useFrame (beginRootFrame) until the next measured canvas starts
-// or the tick ends.
+// or the tick ends. An unmeasured canvas rendered in between is counted into
+// the previous one (CPU time, matrix updates; GPU time is per context).
 let rendering: Core | null = null;
 let unhookLoop: (() => void) | null = null;
 // rAF timestamp of the current tick, shared by every canvas rendered in it
@@ -138,6 +129,7 @@ function hookLoop() {
 export function acquirePerf(
   gl: AnyRenderer,
   scene: THREE.Scene,
+  invalidate: () => void,
   options: PerfProps = {},
 ): () => void {
   const fixed = normalize(options);
@@ -152,7 +144,7 @@ export function acquirePerf(
     core = {
       options: fixed,
       holders: new Set(),
-      ...createCore(gl, scene, fixed),
+      ...createCore(gl, scene, invalidate, fixed),
     };
     cores.set(gl, core);
     if (cores.size === 1) hookLoop();
@@ -192,11 +184,19 @@ export function acquirePerf(
 function createCore(
   gl: AnyRenderer,
   scene: THREE.Scene,
+  invalidate: () => void,
   { logsPerSecond, chartLength, chartHz }: CoreOptions,
 ) {
   const { store, events } = instanceFor(gl);
   const { getState: getPerf, setState: setPerf } = store;
-  setPerf({ gl, scene });
+  setPerf({ gl, scene, invalidate });
+
+  /**
+   * Requests a frame on this canvas only (frameloop="demand"). Deferred: an
+   * invalidate issued inside a global after-effect is lost — R3F has already
+   * decided to stop the loop.
+   */
+  const requestFrame = () => queueMicrotask(() => invalidate());
 
   const backend: PerfBackend = createBackend(gl, scene);
   backend.start();

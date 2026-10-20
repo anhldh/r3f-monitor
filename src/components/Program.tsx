@@ -1,5 +1,4 @@
 import { type FC, useEffect, useState } from "react";
-import { invalidate } from "@react-three/fiber";
 import { usePerf, type ProgramsPerf } from "../store";
 import type { PerfProps } from "../types";
 import { estimateBytesUsed } from "../helpers/estimateBytesUsed";
@@ -232,6 +231,8 @@ const ProgramUI: FC<{ el: ProgramsPerf }> = ({ el }) => {
 
   // Lấy GL context để tính % render
   const gl: any = usePerf((state) => state.gl);
+  // This canvas only: a bare invalidate() would wake every demand canvas
+  const invalidate = usePerf((state) => state.invalidate);
 
   // Helper tính % Draw Calls
   const getDrawCallPercent = () => {

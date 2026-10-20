@@ -115,6 +115,8 @@ export type State = {
    */
   gl: AnyRenderer | undefined;
   scene: THREE.Scene | undefined;
+  /** Requests a frame on the measured canvas only (frameloop="demand"). */
+  invalidate: () => void;
   programs: ProgramsPerfs;
   /** Per-pass timings (deepAnalyze on WebGPU, three r181+). */
   passes: PassStats[];
@@ -237,6 +239,7 @@ const createPerfStore = () => createStore<State>((_set, get): any => {
     objectWithMaterials: null,
     passes: [],
     scene: undefined,
+    invalidate: () => {},
     programs: new Map(),
     sceneLength: undefined,
     tab: "infos",
