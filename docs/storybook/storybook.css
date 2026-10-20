@@ -633,3 +633,43 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+.multi-canvas {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.multi-canvas-pane {
+  position: relative;
+  min-width: 0;
+  background: #070b12;
+}
+
+.multi-canvas-tag {
+  position: absolute;
+  z-index: 2;
+  left: 22px;
+  bottom: 20px;
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  background: rgba(7, 11, 18, 0.78);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.32);
+  backdrop-filter: blur(14px);
+  pointer-events: none;
+}
+
+.multi-canvas-tag strong {
+  display: block;
+  color: #fff;
+  font-size: 13px;
+}
+
+.multi-canvas-tag span {
+  display: block;
+  margin-top: 2px;
+  color: #8fa2b8;
+  font: 500 11px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+}

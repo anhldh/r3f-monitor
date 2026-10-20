@@ -51,6 +51,14 @@ export const colorsGraph = {
   vram: "#FF8C00",
 };
 
+/**
+ * Top of an FPS axis: `floor` until the measured FPS outgrows it, then the next
+ * multiple of 60 (144 Hz -> 180, 185 Hz -> 240). The 2 FPS of slack keeps a
+ * 120 Hz display that reads 120.4 on the 120 line.
+ */
+export const fpsAxisTop = (maxFps: number, floor: number) =>
+  maxFps <= floor + 2 ? floor : Math.ceil((maxFps - 2) / 60) * 60;
+
 // --- Checkbox Component ---
 export const SettingCheckbox = ({
   label,

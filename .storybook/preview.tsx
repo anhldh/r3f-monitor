@@ -8,7 +8,14 @@ const preview: Preview = {
     },
     options: {
       storySort: {
-        order: ["R3F Monitor", "Components", "Guides", "WebGPU"],
+        order: [
+          "R3F Monitor",
+          "Components",
+          "Guides",
+          "WebGPU",
+          "Multi Canvas",
+          ["Basic Usage", "WebGPU", "Headless UI", "Adaptive Quality"],
+        ],
       },
     },
     controls: {

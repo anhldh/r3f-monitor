@@ -8,9 +8,9 @@ An advanced, easy-to-use performance monitoring tool for [@react-three/fiber](ht
 
 Add the <code>&lt;PerfMonitor /&gt;</code> component anywhere in your R3F Canvas — or go **headless** and bring your own UI.
 
-> **New in v3 — WebGPU.** Works with three's `WebGPURenderer` as well as the classic `WebGLRenderer`. The renderer is detected at runtime, so there is nothing to configure and **existing WebGL projects need no changes.**
+> **v3 — WebGPU.** Works with three's `WebGPURenderer` as well as the classic `WebGLRenderer`. The renderer is detected at runtime, so there is nothing to configure and **existing WebGL projects need no changes.**
 >
-> **v3.1** — `deepAnalyze` now works on WebGPU too (per-material breakdown + per-pass timing), and the monitor works with `frameloop="demand"`.
+> **v3.2 — Multiple canvases.** Each `<Canvas>` is measured on its own; name one with `id` and read it from anywhere with `usePerfData({ id })`. Single-canvas apps need no changes. See [Multiple Canvases](#-multiple-canvases).
 
 ## Display Modes
 
@@ -56,6 +56,7 @@ Live example:
 ## 🚀 Key Features
 
 - **WebGPU + WebGL (v3):** One component for both. The measurement path is chosen from the renderer at runtime — including `WebGPURenderer`'s own WebGL 2 fallback. Adds a **GPU compute** metric and **exact** (rather than estimated) VRAM on WebGPU.
+- **Multiple canvases (v3.2):** Every `<Canvas>` gets its own measurement, readouts and adaptive quality; pick one from outside with `id`.
 - **Comprehensive Metrics:** Monitor FPS, CPU/GPU render times, and JS Heap Memory.
 - **Accurate Measurement Engine (v2):** FPS via a real 1-second sliding window, CPU via `performance.now()` accumulation, and GPU via a WebGL2 timer-query queue (`EXT_disjoint_timer_query_webgl2`) reporting true milliseconds.
 - **Headless Mode (v2.1):** Run the measurement engine without the built-in UI. Read live metrics with `usePerfData()`.
@@ -88,6 +89,8 @@ bun i r3f-monitor
 ## ⚙️ Options
 
 ```ts
+id?: string                     // Names this canvas: usePerfData({ id }) (v3.2)
+
 logsPerSecond?: number          // Log refresh rate (default: 10)
 
 antialias?: boolean             // Enable text antialiasing
@@ -124,8 +127,8 @@ displayType?: "tab" | "classic" // Default: "tab"
 
 Starting with **v2**, the FPS / CPU / GPU values come from a reworked measurement core:
 
-- **FPS** — counted over a real 1-second sliding window and reported as a continuous value, so the readout stays stable instead of flickering ±1. Time the loop spends idle (on-demand pauses, hidden tab) is left out of the window. The line graph also dips on single frames that clearly stall (over 2× the current frame time).
-- **CPU** — wall-clock time of the render phase, accumulated per frame via `performance.now()`.
+- **FPS** — counted over a real 1-second sliding window and reported as a continuous value, so the readout stays stable instead of flickering ±1. Time the loop spends idle (on-demand pauses, hidden tab) is left out of the window. The line graph also dips on single frames that clearly stall (over 2× the current frame time). Until the window holds 100 ms of rendering (right after mount), `fps` is `0`, shown as `-`.
+- **CPU** — wall-clock time of the canvas's frame via `performance.now()`: from its first `useFrame` to the end of its render, so every `useFrame` callback plus `gl.render`. Work in global `addEffect` callbacks isn't included (v3.2). With several canvases, see [Multiple Canvases](#-multiple-canvases).
 - **GPU** — GPU time for the render pass, in **true milliseconds** (no scaling fudge). The mechanism depends on the renderer: a WebGL2 timer-query queue (`EXT_disjoint_timer_query_webgl2`) on `WebGLRenderer`, three's timestamp queries on `WebGPURenderer`. Both are read back asynchronously, so the value trails the current frame by a frame or two.
 
 The bar graph (`graphType: "bar"`) scrolls left as new samples arrive and uses a fixed (high-water) vertical scale, with a gradient fill per metric.
@@ -168,14 +171,14 @@ renderer class (`"webgpu"`), `infos.api` reports the GPU API actually in use
 
 ### What differs
 
-| Metric | `WebGLRenderer` | `WebGPURenderer` |
-| --- | --- | --- |
-| **VRAM** | **estimated** — walks the scene and sums buffer sizes, guessing texture memory from dimensions | **measured** — three tracks real allocated bytes, including render targets and uniform buffers |
-| **COMPUTE** | — | ms spent in compute passes, plus a **DISPATCH** count |
-| **Shaders** | an enumerable list of programs | a count only — node materials compile straight to WGSL pipelines |
-| **`deepAnalyze`** | grouped per program | grouped per material, plus per-pass timing (three r181+) |
+| Metric            | `WebGLRenderer`                                                                                | `WebGPURenderer`                                                                               |
+| ----------------- | ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| **VRAM**          | **estimated** — walks the scene and sums buffer sizes, guessing texture memory from dimensions | **measured** — three tracks real allocated bytes, including render targets and uniform buffers |
+| **COMPUTE**       | —                                                                                              | ms spent in compute passes, plus a **DISPATCH** count                                          |
+| **Shaders**       | an enumerable list of programs                                                                 | a count only — node materials compile straight to WGSL pipelines                               |
+| **`deepAnalyze`** | grouped per program                                                                            | grouped per material, plus per-pass timing (three r181+)                                       |
 
-Because the two renderers measure *different things*, the VRAM figures will not
+Because the two renderers measure _different things_, the VRAM figures will not
 match for the same scene. `usePerfData().vramSource` tells you which you are
 looking at.
 
@@ -183,10 +186,64 @@ The **COMPUTE** row only appears once the scene actually dispatches compute — 
 ordinary scene never does, so it stays hidden. `GPU` covers the render pass
 only: **total GPU time is `GPU + COMPUTE`.**
 
-**`deepAnalyze` works on both** since v3.1 — see [Deep Analysis](#-deep-analysis).
+`deepAnalyze` works on both renderers — see [Deep Analysis](#-deep-analysis).
 
 GPU timing needs three's timestamp queries, which r3f-monitor turns on itself —
 you do **not** need to pass `trackTimestamp` when creating the renderer.
+
+---
+
+## 🪟 Multiple Canvases
+
+> Added in **v3.2**
+
+Every `<Canvas>` with a `<PerfMonitor />` or `<PerfHeadless />` is measured on its
+own: separate readouts, graphs, `deepAnalyze` list and adaptive quality. Give a
+canvas an `id` to read it from outside:
+
+```tsx
+import { Canvas } from "@react-three/fiber";
+import { PerfMonitor, usePerfData } from "r3f-monitor";
+
+function Label({ id }: { id: string }) {
+  const fps = usePerfData((d) => d.fps, { id });
+  return <span>{fps > 0 ? fps.toFixed(0) : "-"} FPS</span>;
+}
+
+export default function App() {
+  return (
+    <>
+      <Canvas>
+        <PerfMonitor id="left" position="top-left" />
+        {/* <SceneA /> */}
+      </Canvas>
+      <Label id="left" />
+
+      <Canvas>
+        <PerfMonitor id="right" />
+        {/* <SceneB /> */}
+      </Canvas>
+      <Label id="right" />
+    </>
+  );
+}
+```
+
+Which canvas a hook reads:
+
+- **With `id`** — `usePerfData({ id })`, `usePerfData(selector, { id })`,
+  `<PerfAdaptive id="…" />`: the canvas with that `id`.
+- **Without `id`, inside a `<Canvas>`** — that canvas.
+- **Without `id`, outside any canvas** — the first measured canvas, so
+  single-canvas apps need no changes.
+
+All canvases render in R3F's single loop: with the default `frameloop` they share
+the same FPS, and `frameloop="demand"` canvases are measured only when they render.
+GPU time is per canvas (each has its own context). A canvas's **CPU time** runs
+from its first `useFrame` until the next **measured** canvas starts, so a canvas
+without a monitor that renders right after a measured one is counted into that
+one's CPU time and matrix updates. When per-canvas CPU matters, add a
+`<PerfHeadless />` to every canvas that renders.
 
 ---
 
@@ -206,20 +263,20 @@ triangles / lines / points, texture slots and — on WebGL — the program's liv
 uniforms. **Hover** the eye to see those meshes in wireframe, **click** it to hide
 them: the quickest way to find the material that tanks a frame.
 
-| | `WebGLRenderer` | `WebGPURenderer` |
-| --- | --- | --- |
-| Grouped by | WebGL program (mapped back to its material) | material |
-| Uniforms | live program uniforms | texture slots read off the material |
-| **Passes** | — | every render / compute pass of a frame, CPU + GPU ms |
+|            | `WebGLRenderer`                             | `WebGPURenderer`                                     |
+| ---------- | ------------------------------------------- | ---------------------------------------------------- |
+| Grouped by | WebGL program (mapped back to its material) | material                                             |
+| Uniforms   | live program uniforms                       | texture slots read off the material                  |
+| **Passes** | —                                           | every render / compute pass of a frame, CPU + GPU ms |
 
 **Passes** (WebGPU only) lists the main scene, shadow maps, render targets,
 post-processing and compute passes separately — something a single GPU number
 can't tell you. It is built on `renderer.inspector`:
 
-| three | Material list | Passes CPU | Passes GPU |
-| --- | --- | --- | --- |
-| < r181 | ✓ | — | — |
-| r181+ | ✓ | ✓ | ✓ (needs `timestamp-query`; arrives a few frames late) |
+| three  | Material list | Passes CPU | Passes GPU                                             |
+| ------ | ------------- | ---------- | ------------------------------------------------------ |
+| < r181 | ✓             | —          | —                                                      |
+| r181+  | ✓             | ✓          | ✓ (needs `timestamp-query`; arrives a few frames late) |
 
 The existing inspector is wrapped, not replaced, so three's own Inspector addon
 keeps working alongside. If analysis ever throws, it switches itself off with one
@@ -246,7 +303,8 @@ The one rule: place `<PerfHeadless />` somewhere **inside `<Canvas>`**.
 
 A single hook, updating at `logsPerSecond` (default ~10×/sec, not every frame). The
 component reading the data can live **outside** `<Canvas>` — it only reads the store,
-no `useThree` required.
+no `useThree` required. With several canvases, pass `{ id }` (see
+[Multiple Canvases](#-multiple-canvases)).
 
 Call with no args → returns **all** the metrics:
 
@@ -264,17 +322,17 @@ const {
 } = usePerfData();
 ```
 
-| Field        | Unit     | Meaning                                                      |
-| ------------ | -------- | ------------------------------------------------------------ |
-| `fps`        | frames/s | frames per second                                            |
-| `cpu`        | ms       | CPU time per frame                                           |
-| `gpu`        | ms       | GPU time per frame, **render pass only**                     |
-| `gpuCompute` | ms       | GPU time in compute passes — WebGPU only, `0` on WebGL        |
-| `mem`        | MB       | JS heap in use                                               |
-| `vram`       | MB       | GPU memory — see `vramSource`                                 |
-| `vramSource` | —        | `"measured"` (WebGPU, real bytes) or `"estimated"` (WebGL)    |
-| `gl`         | —        | render stats for the latest frame                            |
-| `infos`      | —        | renderer/vendor/`backend`/`api` (constant for the session)    |
+| Field        | Unit     | Meaning                                                    |
+| ------------ | -------- | ---------------------------------------------------------- |
+| `fps`        | frames/s | frames per second (`0` until measured)                     |
+| `cpu`        | ms       | CPU time per frame                                         |
+| `gpu`        | ms       | GPU time per frame, **render pass only**                   |
+| `gpuCompute` | ms       | GPU time in compute passes — WebGPU only, `0` on WebGL     |
+| `mem`        | MB       | JS heap in use                                             |
+| `vram`       | MB       | GPU memory — see `vramSource`                              |
+| `vramSource` | —        | `"measured"` (WebGPU, real bytes) or `"estimated"` (WebGL) |
+| `gl`         | —        | render stats for the latest frame                          |
+| `infos`      | —        | renderer/vendor/`backend`/`api` (constant for the session) |
 
 Or pass a **selector** to read only the field you need — the component only
 re-renders when that field changes (avoids wasted re-renders when displaying a
@@ -295,7 +353,7 @@ function MyHud() {
     <div
       style={{ position: "fixed", top: 12, left: 12, font: "12px monospace" }}
     >
-      <div>{fps.toFixed(0)} FPS</div>
+      <div>{fps > 0 ? fps.toFixed(0) : "-"} FPS</div>
       <div>
         CPU {cpu.toFixed(1)} ms · GPU {gpu.toFixed(1)} ms
       </div>
@@ -426,11 +484,11 @@ function Effects() {
 `useDetectGPU` is exported as a drei-compatible alias, and `<GpuTier>` offers a
 render-prop version. The component calling the hook must be under `<Suspense>`.
 
-### One engine, no conflicts
+### One engine per canvas, no conflicts
 
-Since **v2.2** the measurement core is a ref-counted singleton: mounting
-`<PerfHeadless />` and `<PerfMonitor />` at the same time — or toggling the UI
-on and off — always runs exactly **one** engine.
+The measurement core is ref-counted per canvas: mounting `<PerfHeadless />` and
+`<PerfMonitor />` in the same canvas — or toggling the UI on and off — always
+runs exactly **one** engine for that canvas (v2.2; one per canvas since v3.2).
 
 A common setup is `<PerfHeadless />` feeding your own HUD plus `<PerfMonitor />`
 mounted only while debugging. How their options combine (v3.1):
@@ -465,4 +523,4 @@ function App() {
 
 ### Thanks
 
-r3f-monitor was originally built on code from [r3f-perf](https://github.com/utsuboco/r3f-perf) by [@utsuboco](https://github.com/utsuboco) — thank you for the foundation. It has since been largely reworked: new measurement core, headless mode, adaptive quality and WebGPU support.
+Originally based on [r3f-perf](https://github.com/utsuboco/r3f-perf) by [@utsuboco](https://github.com/utsuboco) (MIT).

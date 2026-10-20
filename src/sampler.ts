@@ -62,8 +62,6 @@ const average = (arr: number[]) =>
  *
  * GPU timings are read by the backend and passed to `nextFrame()`, so WebGL
  * and WebGPU share the same math.
- *
- * (Extracted from v2's `GLPerf` in internal.ts.)
  */
 export class PerfSampler {
   paused = false;

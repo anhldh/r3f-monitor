@@ -1,11 +1,11 @@
 import { type FC, useEffect, useMemo, useRef } from "react";
 import { matriceCount, matriceWorldCount } from "./PerfHeadless";
 import { Canvas, useFrame, useThree, type Viewport } from "@react-three/fiber";
-import { getPerf } from "../store";
+import { PerfContext, usePerfInstance, type State } from "../store";
 import * as THREE from "three";
 import type { PerfUIProps } from "../types";
 import styles from "../style/tab.module.css";
-import { colorsGraph } from "./Utils";
+import { colorsGraph, fpsAxisTop } from "./Utils";
 
 export interface graphData {
   curve: THREE.SplineCurve;
@@ -25,11 +25,15 @@ const ChartCurve: FC<PerfUIProps> = ({
     };
   }, [chart]);
 
+  const { getState: getPerf } = usePerfInstance().store;
+
   const fpsRef = useRef<any>(null);
   const gpuRef = useRef<any>(null);
   const cpuRef = useRef<any>(null);
 
   const dummyVec3 = useMemo(() => new THREE.Vector3(0, 0, 0), []);
+  // Top of the FPS axis: grows on high refresh rates, never shrinks
+  const fpsTop = useRef(100);
 
   // Recompute positions from viewport (w, h) so the graph stretches with the canvas.
   const updatePoints = (
@@ -37,13 +41,14 @@ const ChartCurve: FC<PerfUIProps> = ({
     factor: number = 1,
     ref: any,
     viewport: Viewport,
+    top: number = 100,
   ) => {
     let maxVal = 0;
     const { width: w, height: h } = viewport;
 
     const chart = getPerf().chart.data[element];
     if (!chart || chart.length === 0) {
-      return;
+      return maxVal;
     }
     const padding = minimal ? 2 : 6;
     const paddingTop = minimal ? 2 : 6;
@@ -57,7 +62,7 @@ const ChartCurve: FC<PerfUIProps> = ({
         // X spans the full viewport width
         dummyVec3.set(
           padding + (i / (len - 1)) * (w - padding * 2) - w / 2,
-          ((Math.min(100, chart[id]) * factor) / 100) *
+          ((Math.min(top, chart[id]) * factor) / top) *
             (h - padding * 2 - paddingTop) -
             h / 2,
           0,
@@ -68,10 +73,18 @@ const ChartCurve: FC<PerfUIProps> = ({
     }
 
     ref.attributes.position.needsUpdate = true;
+    return maxVal;
   };
 
   useFrame(function updateChartCurve({ viewport }) {
-    updatePoints("fps", 1, fpsRef.current, viewport);
+    const maxFps = updatePoints(
+      "fps",
+      1,
+      fpsRef.current,
+      viewport,
+      fpsTop.current,
+    );
+    fpsTop.current = Math.max(fpsTop.current, fpsAxisTop(maxFps, 100));
     updatePoints("gpu", 5, gpuRef.current, viewport);
     updatePoints("cpu", 5, cpuRef.current, viewport);
   });
@@ -152,6 +165,7 @@ export const ChartUI: FC<PerfUIProps> = ({
   minimal,
 }) => {
   const canvas = useRef<any>(undefined);
+  const perf = usePerfInstance();
 
   return (
     <div
@@ -186,9 +200,12 @@ export const ChartUI: FC<PerfUIProps> = ({
           height: "100%",
         }}
       >
-        <ChartDriver />
-        <Renderer />
-        {showGraph && <ChartCurve minimal={minimal} chart={chart} />}
+        {/* Another React root: hand the monitored canvas down */}
+        <PerfContext.Provider value={perf}>
+          <ChartDriver />
+          <Renderer />
+          {showGraph && <ChartCurve minimal={minimal} chart={chart} />}
+        </PerfContext.Provider>
       </Canvas>
     </div>
   );
@@ -216,13 +233,14 @@ const Renderer = () => {
 const CHART_INTERVAL = 1000 / 30;
 const ChartDriver = () => {
   const advance = useThree((s) => s.advance);
+  const { getState: getPerf } = usePerfInstance().store;
   // Resizing clears the drawing buffer: restart the effect to redraw once.
   const size = useThree((s) => s.size);
 
   useEffect(() => {
     let raf = 0;
     let last = 0;
-    let lastChart: ReturnType<typeof getPerf>["chart"] | undefined;
+    let lastChart: State["chart"] | undefined;
     const tick = (t: number) => {
       raf = requestAnimationFrame(tick);
       // Redraw on new chart data, not on `paused`: an isolated demand frame
@@ -236,7 +254,7 @@ const ChartDriver = () => {
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [advance, size]);
+  }, [advance, size, getPerf]);
 
   return null;
 };

@@ -4,7 +4,25 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/).
 
-## Unreleased
+## 3.2.0 - 21-10-2026
+
+**Multiple canvases, and an FPS graph that shows real stalls.** Each `<Canvas>`
+is now measured on its own, and the FPS graph dips on frames that actually
+freeze instead of smoothing them away.
+
+### Added
+
+- **Multiple canvases.** Every `<Canvas>` with a `<PerfMonitor />` or
+  `<PerfHeadless />` gets its own measurement, store and readouts; before, a
+  second canvas reused the first one's core with a warning. Name a canvas with
+  the new `id` prop to read it from outside: `usePerfData({ id })`,
+  `usePerfData(selector, { id })`, `<PerfAdaptive id="…" />`. Hooks inside a
+  `<Canvas>` read that canvas; outside one, without `id`, they read the first
+  measured canvas.
+- The FPS graph's scale grows on high-refresh displays (144 Hz → 180,
+  185 Hz → 240) instead of clipping at the top.
+- Storybook: **Multi Canvas** (basic usage, WebGPU, headless UI, adaptive
+  quality).
 
 ### Changed
 
@@ -19,15 +37,37 @@ This project adheres to [Semantic Versioning](https://semver.org/).
   holds 100 ms of rendering, so the first readings after mount no longer
   overshoot the refresh rate (which also skewed `PerfAdaptive`'s refresh-rate
   estimate). Until then `fps` / `rawFps` are `0`, shown as `-`, and
-  `PerfAdaptive` skips those samples.
+  `PerfAdaptive` skips those samples. `getReport()` averages fps over measured
+  ticks only.
+- CPU time now starts at the canvas's first `useFrame` instead of the
+  monitor's global effect, so it no longer includes other `addEffect` callbacks
+  (e.g. `PerfAdaptive` handlers) and can read slightly lower than in 3.1. It no
+  longer depends on mount or import order either.
+- The monitor's group in the scene is named `r3f-monitor` (was `r3f-perf`).
 
 ### Fixed
 
+- With `frameloop="demand"`, isolated `invalidate()` frames update the
+  readouts, `usePerfData` and both graphs; before, the metrics and bar graph
+  could stay frozen and the line graph skipped them.
 - Idle time (`frameloop="demand"` pauses over 100 ms, hidden tab) no longer
   counts as frame time: FPS readouts, the graphs and the `rawFps` fed to
   `PerfAdaptive` no longer sag for up to a second after rendering resumes, and
   isolated `invalidate()` frames no longer read as ~1 FPS. Back-to-back demand
-  frames while interacting still count normally.
+  frames while interacting still count normally, and an on-demand canvas that
+  idles while another keeps rendering is handled the same way.
+- `deepAnalyze`'s extra frames and the programs panel's hide / wireframe
+  toggles only request a frame on their own canvas, not on every on-demand
+  canvas.
+- Unmounting the monitor hands `renderer.info.autoReset` (and WebGPU's
+  `trackTimestamp`) back as they were, so three resets its render stats again.
+
+### Known limitations
+
+- With several canvases, CPU time is split where each **measured** canvas
+  starts its frame: a canvas without a monitor that renders right after a
+  measured one adds to its CPU time and matrix updates. Add a
+  `<PerfHeadless />` to every canvas that renders when per-canvas CPU matters.
 
 ## 3.1.0 - 30-09-2026
 

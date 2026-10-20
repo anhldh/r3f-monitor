@@ -12,8 +12,13 @@ export { PerfHeadless } from "./components/PerfHeadless";
  * Hook for reading metrics to build your own UI.
  * - `usePerfData()` -> everything { fps, cpu, gpu, mem, vram, gl, infos }.
  * - `usePerfData(d => d.fps)` -> a single field (re-renders only when it changes).
+ * - Several canvases: `usePerfData({ id })`, `usePerfData(d => d.fps, { id })`.
  */
-export { usePerfData, type PerfData } from "./hooks/usePerfData";
+export {
+  usePerfData,
+  type PerfData,
+  type PerfDataOptions,
+} from "./hooks/usePerfData";
 
 // ── Backend (WebGL / WebGPU) ─────────────────────────────────
 /**

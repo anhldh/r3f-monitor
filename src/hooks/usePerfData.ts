@@ -45,6 +45,15 @@ export type PerfData = {
   };
 };
 
+export type PerfDataOptions = {
+  /**
+   * Which canvas to read, as named by the `id` prop of its <PerfHeadless /> or
+   * <PerfMonitor />. Defaults to the surrounding <Canvas>, or the first
+   * measured canvas when called outside one.
+   */
+  id?: string;
+};
+
 /** Flattens raw store state into PerfData. */
 const select = (s: import("../store").State): PerfData => ({
   fps: s.log?.fps ?? 0,
@@ -74,12 +83,27 @@ const select = (s: import("../store").State): PerfData => ({
  * @example
  * // Single field -> re-renders only when it changes
  * const fps = usePerfData((d) => d.fps);
+ *
+ * @example
+ * // Several canvases: name one with <PerfHeadless id="left" />, then
+ * const { fps, gl } = usePerfData({ id: "left" });
+ * const fps = usePerfData((d) => d.fps, { id: "left" });
  */
-export function usePerfData(): PerfData;
-export function usePerfData<T>(selector: (data: PerfData) => T): T;
-export function usePerfData<T>(selector?: (data: PerfData) => T) {
+export function usePerfData(options?: PerfDataOptions): PerfData;
+export function usePerfData<T>(
+  selector: (data: PerfData) => T,
+  options?: PerfDataOptions,
+): T;
+export function usePerfData<T>(
+  selectorOrOptions?: ((data: PerfData) => T) | PerfDataOptions,
+  options?: PerfDataOptions,
+) {
+  const hasSelector = typeof selectorOrOptions === "function";
+  const selector = hasSelector ? selectorOrOptions : undefined;
+  const id = (hasSelector ? options : selectorOrOptions)?.id;
+
   return usePerf((s) => {
     const data = select(s);
     return selector ? selector(data) : data;
-  });
+  }, id);
 }

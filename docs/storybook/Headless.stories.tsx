@@ -22,7 +22,7 @@ function CustomHud() {
 
   return (
     <aside className="metrics-hud" aria-label="Custom performance dashboard">
-      <Metric label="FPS" value={data.fps.toFixed(0)} />
+      <Metric label="FPS" value={data.fps > 0 ? data.fps.toFixed(0) : "-"} />
       <Metric label="CPU" value={data.cpu.toFixed(2)} unit="ms" />
       <Metric label="GPU" value={data.gpu.toFixed(2)} unit="ms" />
       <Metric label="VRAM" value={data.vram.toFixed(1)} unit="MB" />
@@ -96,7 +96,7 @@ export const CustomDashboard: Story = {
         language: "tsx",
         code: `function MyHud() {
   const { fps, cpu, gpu, vram, gl } = usePerfData();
-  return <div>{fps.toFixed(0)} FPS · {gl.calls} calls</div>;
+  return <div>{fps > 0 ? fps.toFixed(0) : "-"} FPS · {gl.calls} calls</div>;
 }
 
 export default function App() {
@@ -121,7 +121,7 @@ export const FpsSelector: Story = {
         language: "tsx",
         code: `function FpsBadge() {
   const fps = usePerfData((data) => data.fps);
-  return <span>{fps.toFixed(0)} FPS</span>;
+  return <span>{fps > 0 ? fps.toFixed(0) : "-"} FPS</span>;
 }`,
       },
     },

@@ -108,7 +108,7 @@ export const PerfTab: FC<PerfPropsGui> = (props) => {
         deepAnalyze={localDeepAnalyze}
         matrixUpdate={localMatrixUpdate}
       />
-      <HtmlMinimal name="r3f-perf">
+      <HtmlMinimal name="r3f-monitor">
         <div className={`${s.perfWrapper} ${posClass}`}>
           {!isTop && localDeepAnalyze && showPrograms && (
             <div className={s.programsPanel}>

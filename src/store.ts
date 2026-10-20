@@ -1,4 +1,8 @@
-import { createWithEqualityFn } from "zustand/traditional";
+import { createContext, useContext, useSyncExternalStore } from "react";
+import { context as r3fContext } from "@react-three/fiber";
+import EventEmitter from "eventemitter3";
+import { createStore, type StoreApi } from "zustand/vanilla";
+import { useStoreWithEqualityFn } from "zustand/traditional";
 import { shallow } from "zustand/shallow";
 import * as THREE from "three";
 
@@ -111,6 +115,8 @@ export type State = {
    */
   gl: AnyRenderer | undefined;
   scene: THREE.Scene | undefined;
+  /** Requests a frame on the measured canvas only (frameloop="demand"). */
+  invalidate: () => void;
   programs: ProgramsPerfs;
   /** Per-pass timings (deepAnalyze on WebGPU, three r181+). */
   passes: PassStats[];
@@ -120,14 +126,7 @@ export type State = {
 
 export type ProgramsPerfs = Map<string, ProgramsPerf>;
 
-const setCustomData = (customData: number) => {
-  setPerf({ customData });
-};
-const getCustomData = () => {
-  return getPerf().customData;
-};
-
-export const usePerfImpl = createWithEqualityFn<State>((_set, get): any => {
+const createPerfStore = () => createStore<State>((_set, get): any => {
   function getReport() {
     const { accumulated, startTime, infos, estimatedMemory } = get();
     const maxMemory = get().log?.maxMemory;
@@ -240,6 +239,7 @@ export const usePerfImpl = createWithEqualityFn<State>((_set, get): any => {
     objectWithMaterials: null,
     passes: [],
     scene: undefined,
+    invalidate: () => {},
     programs: new Map(),
     sceneLength: undefined,
     tab: "infos",
@@ -247,8 +247,76 @@ export const usePerfImpl = createWithEqualityFn<State>((_set, get): any => {
   };
 });
 
-const usePerf = <S>(sel: (state: State) => S) => usePerfImpl(sel, shallow);
-Object.assign(usePerf, usePerfImpl);
-const { getState: getPerf, setState: setPerf } = usePerfImpl;
+/** One measured canvas: its own store and its own `log` events. */
+export type PerfInstance = { store: StoreApi<State>; events: EventEmitter };
 
-export { usePerf, getPerf, setPerf, setCustomData, getCustomData };
+const createInstance = (): PerfInstance => ({
+  store: createPerfStore(),
+  events: new EventEmitter(),
+});
+
+// Kept per renderer, not per core, so UI state survives a core restart.
+const instances = new WeakMap<AnyRenderer, PerfInstance>();
+
+export function instanceFor(gl: AnyRenderer): PerfInstance {
+  let instance = instances.get(gl);
+  if (!instance) instances.set(gl, (instance = createInstance()));
+  return instance;
+}
+
+/** What hooks read while no canvas is being measured. */
+const EMPTY = createInstance();
+
+// Renderers with a running core, in mount order, and the ids given to them.
+let running: AnyRenderer[] = [];
+let ids = new Map<string, AnyRenderer>();
+const listeners = new Set<() => void>();
+
+export function setRunning(
+  nextRunning: AnyRenderer[],
+  nextIds: Map<string, AnyRenderer>,
+) {
+  running = nextRunning;
+  ids = nextIds;
+  listeners.forEach((listener) => listener());
+}
+
+const subscribeRunning = (listener: () => void) => {
+  listeners.add(listener);
+  return () => void listeners.delete(listener);
+};
+
+const resolve = (id?: string) => {
+  const gl = id === undefined ? running[0] : ids.get(id);
+  return gl ? instanceFor(gl) : EMPTY;
+};
+
+/** Set by the monitor UI for the roots it renders outside the measured one. */
+export const PerfContext = createContext<PerfInstance | null>(null);
+
+/**
+ * The instance a hook reads: the canvas named by `id`, else the monitor UI's
+ * own, else the surrounding <Canvas>, else the first measured canvas.
+ */
+export function usePerfInstance(id?: string): PerfInstance {
+  const provided = useContext(PerfContext);
+  const root = useContext(r3fContext);
+  const own =
+    id !== undefined
+      ? null
+      : (provided ??
+        (root ? instanceFor(root.getState().gl as AnyRenderer) : null));
+
+  // Only a hook that has to look its canvas up re-renders when the list
+  // changes.
+  const found = useSyncExternalStore(
+    subscribeRunning,
+    () => (own ? null : resolve(id)),
+    () => null,
+  );
+
+  return own ?? found ?? EMPTY;
+}
+
+export const usePerf = <S>(sel: (state: State) => S, id?: string) =>
+  useStoreWithEqualityFn(usePerfInstance(id).store, sel, shallow);

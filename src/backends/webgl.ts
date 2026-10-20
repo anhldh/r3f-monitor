@@ -60,6 +60,7 @@ export class WebGLPerfBackend implements PerfBackend {
   private queries: WebGLQuery[] = [];
   private gpuDuration = 0;
   private lastProgramCount = -1;
+  private autoResetBefore = true;
 
   constructor(gl: THREE.WebGLRenderer, scene: THREE.Scene) {
     this.gl = gl;
@@ -73,7 +74,10 @@ export class WebGLPerfBackend implements PerfBackend {
 
   start() {
     this.ext = this.ctx.getExtension("EXT_disjoint_timer_query_webgl2");
-    if (this.gl.info) this.gl.info.autoReset = false;
+    if (this.gl.info) {
+      this.autoResetBefore = this.gl.info.autoReset;
+      this.gl.info.autoReset = false;
+    }
   }
 
   async readInfos(): Promise<RendererInfos> {
@@ -260,5 +264,8 @@ export class WebGLPerfBackend implements PerfBackend {
     this.queries.length = 0;
     this.gpuDuration = 0;
     this.lastProgramCount = -1;
+
+    // Nobody resets `info` once the monitor is gone: hand that back to three.
+    if (this.gl.info) this.gl.info.autoReset = this.autoResetBefore;
   }
 }

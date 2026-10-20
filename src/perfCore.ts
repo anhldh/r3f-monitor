@@ -1,17 +1,11 @@
-import {
-  addAfterEffect,
-  addEffect,
-  addTail,
-  invalidate,
-} from "@react-three/fiber";
+import { addAfterEffect, addEffect, addTail } from "@react-three/fiber";
 import * as THREE from "three";
 
 import { PerfSampler, type SampleChart, type SampleLog } from "./sampler";
 import { createBackend, type AnyRenderer } from "./backends/detect";
 import type { PerfBackend } from "./backends/types";
-import { getPerf, setPerf } from "./store";
+import { instanceFor, setRunning } from "./store";
 import type { PerfProps } from "./types";
-import { emitEvent } from "./events/vanilla";
 
 const updateMatrixWorldTemp = THREE.Object3D.prototype.updateMatrixWorld;
 const updateWorldMatrixTemp = THREE.Object3D.prototype.updateWorldMatrix;
@@ -26,15 +20,12 @@ const maxGl = ["calls", "triangles", "points", "lines"] as const;
  */
 const ANALYSIS_SETTLE_FRAMES = 4;
 
-/**
- * Requests a frame for frameloop="demand". Deferred: an `invalidate()` issued
- * inside a global after-effect is lost — R3F has already decided to stop the loop.
- */
-const requestFrame = () => queueMicrotask(() => invalidate());
 const maxLog = ["gpu", "cpu", "mem", "fps"] as const;
 
 export const matriceWorldCount = { value: 0 };
 export const matriceCount = { value: 0 };
+/** Cores currently counting matrix updates. */
+let matrixCores = 0;
 
 /** Fixed at core creation — they size buffers and throttles. */
 type CoreOptions = {
@@ -57,22 +48,22 @@ const normalize = (options: PerfProps): CoreOptions => ({
 });
 
 /**
- * Perf measurement core — ref-counted singleton, React-agnostic.
+ * Perf measurement cores — one per renderer (canvas), ref-counted and
+ * React-agnostic.
  *
- * The first `acquirePerf()` picks a backend for the active renderer
- * (WebGLRenderer / WebGPURenderer) and hooks into the render loop; later calls
- * register as extra holders. Release removes the holder and disposes at 0,
- * so <PerfHeadless /> and <PerfMonitor /> mounted together share ONE core.
+ * The first `acquirePerf()` for a renderer picks its backend (WebGLRenderer /
+ * WebGPURenderer) and starts measuring; later calls for the same renderer
+ * register as extra holders. Release removes the holder and disposes at 0, so
+ * <PerfHeadless /> and <PerfMonitor /> mounted in one canvas share ONE core.
  */
-const holders = new Set<LiveFlags>();
-let current: {
-  gl: AnyRenderer;
+type Holder = LiveFlags & { id?: string };
+type Core = ReturnType<typeof createCore> & {
   options: CoreOptions;
-  setFlags: (flags: LiveFlags) => void;
-  dispose: () => void;
-} | null = null;
+  holders: Set<Holder>;
+};
+const cores = new Map<AnyRenderer, Core>();
 
-function mergedFlags(): LiveFlags {
+function mergedFlags(holders: Set<Holder>): LiveFlags {
   const flags: LiveFlags = { deepAnalyze: false, matrixUpdate: false };
   for (const holder of holders) {
     flags.deepAnalyze ||= holder.deepAnalyze;
@@ -81,48 +72,111 @@ function mergedFlags(): LiveFlags {
   return flags;
 }
 
+/** Tells the store which canvases are measured, and under which ids. */
+function publishRunning() {
+  const ids = new Map<string, AnyRenderer>();
+  for (const [gl, core] of cores) {
+    for (const holder of core.holders) {
+      if (holder.id !== undefined) ids.set(holder.id, gl);
+    }
+  }
+  setRunning([...cores.keys()], ids);
+}
+
+// R3F's global effects wrap ALL roots in a tick, so each canvas is timed from
+// its own first useFrame (beginRootFrame) until the next measured canvas starts
+// or the tick ends. An unmeasured canvas rendered in between is counted into
+// the previous one (CPU time, matrix updates; GPU time is per context).
+let rendering: Core | null = null;
+let unhookLoop: (() => void) | null = null;
+// rAF timestamp of the current tick, shared by every canvas rendered in it
+let tickTime = 0;
+
+function endRootFrame() {
+  rendering?.frameEnd(tickTime);
+  rendering = null;
+}
+
+/** Call first thing in a root's frame (useFrame at the lowest priority). */
+export function beginRootFrame(gl: AnyRenderer) {
+  const core = cores.get(gl);
+  if (!core || core === rendering) return;
+  endRootFrame();
+  rendering = core;
+  core.frameStart();
+}
+
+function hookLoop() {
+  const unsubBefore = addEffect((timestamp) => {
+    tickTime = timestamp;
+  });
+  const unsubAfter = addAfterEffect(() => {
+    endRootFrame();
+    cores.forEach((core) => core.tickEnd());
+  });
+  // tail: when r3f stops rendering
+  const unsubTail = addTail(() => {
+    cores.forEach((core) => core.pause());
+    return false;
+  });
+  unhookLoop = () => {
+    unsubBefore();
+    unsubAfter();
+    unsubTail();
+  };
+}
+
 export function acquirePerf(
   gl: AnyRenderer,
   scene: THREE.Scene,
+  invalidate: () => void,
   options: PerfProps = {},
 ): () => void {
   const fixed = normalize(options);
-  const holder: LiveFlags = {
+  const holder: Holder = {
     deepAnalyze: !!options.deepAnalyze,
     matrixUpdate: !!options.matrixUpdate,
+    id: options.id,
   };
-  holders.add(holder);
 
-  if (!current) {
-    current = { gl, options: fixed, ...createCore(gl, scene, fixed) };
-  } else if (current.gl !== gl) {
-    console.warn(
-      "[r3f-monitor] acquirePerf: core is already bound to another renderer — multi-canvas is not supported, reusing the existing core.",
-    );
+  let core = cores.get(gl);
+  if (!core) {
+    core = {
+      options: fixed,
+      holders: new Set(),
+      ...createCore(gl, scene, invalidate, fixed),
+    };
+    cores.set(gl, core);
+    if (cores.size === 1) hookLoop();
   } else if (
-    current.options.logsPerSecond !== fixed.logsPerSecond ||
-    current.options.chartLength !== fixed.chartLength ||
-    current.options.chartHz !== fixed.chartHz
+    core.options.logsPerSecond !== fixed.logsPerSecond ||
+    core.options.chartLength !== fixed.chartLength ||
+    core.options.chartHz !== fixed.chartHz
   ) {
     console.warn(
       "[r3f-monitor] acquirePerf: core is already running with a different logsPerSecond / chart — keeping the first instance's values.",
     );
   }
-  current.setFlags(mergedFlags());
+  const owner = core;
+  owner.holders.add(holder);
+  owner.setFlags(mergedFlags(owner.holders));
+  publishRunning();
 
   let released = false;
   return () => {
     if (released) return;
     released = true;
-    holders.delete(holder);
-    if (!current) return;
+    owner.holders.delete(holder);
 
-    if (holders.size === 0) {
-      current.dispose();
-      current = null;
+    if (owner.holders.size === 0) {
+      if (rendering === owner) rendering = null;
+      owner.dispose();
+      cores.delete(gl);
+      if (cores.size === 0) unhookLoop?.();
     } else {
-      current.setFlags(mergedFlags());
+      owner.setFlags(mergedFlags(owner.holders));
     }
+    publishRunning();
   };
 }
 
@@ -130,9 +184,19 @@ export function acquirePerf(
 function createCore(
   gl: AnyRenderer,
   scene: THREE.Scene,
+  invalidate: () => void,
   { logsPerSecond, chartLength, chartHz }: CoreOptions,
-): { setFlags: (flags: LiveFlags) => void; dispose: () => void } {
-  setPerf({ gl, scene });
+) {
+  const { store, events } = instanceFor(gl);
+  const { getState: getPerf, setState: setPerf } = store;
+  setPerf({ gl, scene, invalidate });
+
+  /**
+   * Requests a frame on this canvas only (frameloop="demand"). Deferred: an
+   * invalidate issued inside a global after-effect is lost — R3F has already
+   * decided to stop the loop.
+   */
+  const requestFrame = () => queueMicrotask(() => invalidate());
 
   const backend: PerfBackend = createBackend(gl, scene);
   backend.start();
@@ -206,7 +270,7 @@ function createCore(
 
       setPerf({ accumulated, glStats });
 
-      emitEvent("log", [
+      events.emit("log", [
         log,
         { ...glStats, matrices: matriceCount.value + matriceWorldCount.value },
       ]);
@@ -227,6 +291,11 @@ function createCore(
   const setMatrixUpdate = (on: boolean) => {
     if (on === matrixPatched) return;
     matrixPatched = on;
+
+    // The prototypes are shared: patch for the first core, restore after the
+    // last.
+    matrixCores += on ? 1 : -1;
+    if (matrixCores !== (on ? 1 : 0)) return;
 
     if (!on) {
       THREE.Object3D.prototype.updateMatrixWorld = updateMatrixWorldTemp;
@@ -274,8 +343,14 @@ function createCore(
     }
   };
 
+  // Whether this canvas rendered in the current tick / is already marked idle
+  let renderedThisTick = false;
+  let idleMarked = false;
+
   // PRE frame: reset stats + start CPU/GPU timing
-  const unsubEffect = addEffect(() => {
+  const frameStart = () => {
+    renderedThisTick = true;
+    idleMarked = false;
     sampler.paused = false;
     if (getPerf().paused) setPerf({ paused: false });
 
@@ -284,10 +359,10 @@ function createCore(
 
     matriceWorldCount.value = 0;
     matriceCount.value = 0;
-  });
+  };
 
   // AFTER frame: stop timing + commit frame + deepAnalyze
-  const unsubAfter = addAfterEffect((timestamp) => {
+  const frameEnd = (timestamp: number) => {
     backend.endFrame();
     sampler.end();
 
@@ -349,20 +424,29 @@ function createCore(
       settleFrames--;
       requestFrame();
     }
-  });
+  };
 
-  // tail: when r3f stops rendering
-  const unsubTail = addTail(() => {
+  // A canvas can go idle (demand) while others keep the loop running, so the
+  // tail never runs for it: mark it idle at the end of the first tick it skips.
+  const tickEnd = () => {
+    if (!renderedThisTick && !idleMarked) {
+      sampler.markIdle();
+      idleMarked = true;
+    }
+    renderedThisTick = false;
+  };
+
+  const pause = () => {
     sampler.paused = true;
-    sampler.markIdle();
+    if (!idleMarked) sampler.markIdle();
+    idleMarked = true;
     matriceCount.value = 0;
     matriceWorldCount.value = 0;
 
     // `log` keeps its last values: with isolated demand frames the tail runs
     // right after every frame, so resetting it here would hide every sample.
     setPerf({ paused: true });
-    return false;
-  });
+  };
 
   // A hidden tab stops rAF without running the tail: mark the gap here too.
   const onVisibilityChange = () => {
@@ -377,11 +461,7 @@ function createCore(
     backend.dispose();
     sampler.dispose();
     setMatrixUpdate(false);
-
-    unsubEffect();
-    unsubAfter();
-    unsubTail();
   };
 
-  return { setFlags, dispose };
+  return { setFlags, dispose, frameStart, frameEnd, tickEnd, pause };
 }

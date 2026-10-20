@@ -25,7 +25,7 @@ function AppHud() {
   const programs = usePerfData((data) => data.gl.programs);
 
   const cards = [
-    { label: "FPS", value: fps.toFixed(0) },
+    { label: "FPS", value: fps > 0 ? fps.toFixed(0) : "-" },
     { label: "CPU", value: cpu.toFixed(2), unit: "ms" },
     { label: "Draw calls", value: String(calls) },
     { label: "Programs", value: String(programs) },
