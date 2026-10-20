@@ -187,7 +187,10 @@ function createCore(
       accumulated.log.gpuCompute += logger.gpuCompute;
       accumulated.log.cpu += logger.cpu;
       accumulated.log.mem += logger.mem;
-      accumulated.log.fps += logger.fps;
+      if (logger.fps > 0) {
+        accumulated.log.fps += logger.fps;
+        accumulated.fpsFrames++;
+      }
 
       for (let i = 0; i < maxGl.length; i++) {
         const key = maxGl[i];
@@ -284,13 +287,13 @@ function createCore(
   });
 
   // AFTER frame: stop timing + commit frame + deepAnalyze
-  const unsubAfter = addAfterEffect(() => {
+  const unsubAfter = addAfterEffect((timestamp) => {
     backend.endFrame();
     sampler.end();
 
     if (!sampler.paused) {
       const gpu = backend.readGpuTiming();
-      sampler.nextFrame(window.performance.now(), gpu.render, gpu.compute);
+      sampler.nextFrame(timestamp, gpu.render, gpu.compute);
     }
 
     const now = window.performance.now();
@@ -351,6 +354,7 @@ function createCore(
   // tail: when r3f stops rendering
   const unsubTail = addTail(() => {
     sampler.paused = true;
+    sampler.markIdle();
     matriceCount.value = 0;
     matriceWorldCount.value = 0;
 
@@ -360,8 +364,15 @@ function createCore(
     return false;
   });
 
+  // A hidden tab stops rAF without running the tail: mark the gap here too.
+  const onVisibilityChange = () => {
+    if (document.hidden) sampler.markGap();
+  };
+  document.addEventListener("visibilitychange", onVisibilityChange);
+
   const dispose = () => {
     disposed = true;
+    document.removeEventListener("visibilitychange", onVisibilityChange);
 
     backend.dispose();
     sampler.dispose();

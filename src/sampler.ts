@@ -18,8 +18,9 @@ export type SampleLog = {
   gpu: number;
   gpuCompute: number;
   mem: number;
+  /** 0 until the first FPS measurement. */
   fps: number;
-  /** FPS before EMA smoothing — lets adaptive quality react faster. */
+  /** FPS over the 1s window — used by adaptive quality. 0 until measured. */
   rawFps: number;
   duration: number;
   maxMemory: number;
@@ -40,11 +41,23 @@ export type SamplerOptions = {
   chartLogger?: (chart: SampleChart) => void;
 };
 
+// A frame counts as a stall (and dips the chart) only past this multiple of
+// the windowed frame time, so ordinary rAF jitter doesn't draw as dips.
+const STALL_FACTOR = 2;
+
+// After the loop stops (demand mode), a wait longer than this before the next
+// frame is idle time. Shorter waits are just the next vsync while interacting.
+const IDLE_MS = 100;
+
+// Rendering time the FPS window needs before it reports: averaging fewer
+// intervals lets timestamp jitter read above the refresh rate.
+const MIN_WINDOW_MS = 100;
+
 const average = (arr: number[]) =>
   arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
 
 /**
- * Renderer-agnostic sampling: FPS (1s sliding window + EMA), CPU wall-clock,
+ * Renderer-agnostic sampling: FPS (1s sliding window), CPU wall-clock,
  * `logsPerSecond` throttling and a circular chart buffer.
  *
  * GPU timings are read by the backend and passed to `nextFrame()`, so WebGL
@@ -88,8 +101,17 @@ export class PerfSampler {
 
   // FPS: 1s sliding window
   private frameTimes: number[] = [];
+  // Parallel to frameTimes: the interval ending at that frame was idle time
+  private frameAfterGap: boolean[] = [];
   private frameTimesHead = 0;
-  private smoothFps = 0;
+  // Last FPS measured over real rendering, held while the window has none
+  private activeFps = 0;
+  private lastFrameTime = 0;
+  // Next frame follows an idle gap (start, demand mode, hidden tab):
+  // its delta is idle time, not a stall.
+  private afterGap = true;
+  // When the loop last stopped, until the next frame starts
+  private idleSince = 0;
 
   // CPU: accumulated performance.now() deltas
   private cpuStartTime = 0;
@@ -109,14 +131,17 @@ export class PerfSampler {
   }
 
   /**
-   * FPS over a real 1s window (frameCount * 1000 / elapsed).
-   * Returns a float (e.g. 120.3) to avoid +/-1 jitter.
+   * FPS over a real 1s window (intervals * 1000 / time spent rendering), on
+   * rAF timestamps: vsync-aligned, so render-time variance can't shorten an
+   * interval. Intervals that end an idle gap are left out, so pausing a demand
+   * loop doesn't read as low FPS. Returns a float (e.g. 120.3) to avoid +/-1
+   * jitter, or 0 while nothing has been measured yet.
    */
-  private calculateFps(): number {
-    const currentTime = this.now();
-    const cutoff = currentTime - 1000;
+  private calculateFps(t: number, afterGap: boolean): number {
+    const cutoff = t - 1000;
 
-    this.frameTimes.push(currentTime);
+    this.frameTimes.push(t);
+    this.frameAfterGap.push(afterGap);
 
     while (
       this.frameTimesHead < this.frameTimes.length &&
@@ -128,23 +153,53 @@ export class PerfSampler {
     // Compact to bound memory
     if (this.frameTimesHead > 128) {
       this.frameTimes = this.frameTimes.slice(this.frameTimesHead);
+      this.frameAfterGap = this.frameAfterGap.slice(this.frameTimesHead);
       this.frameTimesHead = 0;
     }
 
-    const count = this.frameTimes.length - this.frameTimesHead;
-    if (count < 2) return count;
+    let intervals = 0;
+    let elapsed = 0;
+    for (let i = this.frameTimesHead + 1; i < this.frameTimes.length; i++) {
+      if (this.frameAfterGap[i]) continue;
+      intervals++;
+      elapsed += this.frameTimes[i] - this.frameTimes[i - 1];
+    }
 
-    const oldest = this.frameTimes[this.frameTimesHead];
-    const elapsed = currentTime - oldest;
-    if (elapsed <= 0) return count;
+    // Too little continuous rendering in the window (just started or resumed
+    // from idle): hold the last measurement, or 0 = unknown before the first
+    if (elapsed < MIN_WINDOW_MS) return this.activeFps;
 
-    // (count - 1) intervals over elapsed ms
-    return ((count - 1) * 1000) / elapsed;
+    this.activeFps = (intervals * 1000) / elapsed;
+    return this.activeFps;
+  }
+
+  /**
+   * Call when the loop stops (R3F tail). If the next frame starts more than
+   * IDLE_MS later, that wait is idle time: it isn't plotted as a stall or
+   * counted in the FPS window. In demand mode the tail also runs between
+   * frames while interacting, so a short wait still counts as frame time.
+   */
+  markIdle() {
+    this.idleSince = this.now();
+  }
+
+  /**
+   * The next frame follows a gap no matter how long (tab hidden).
+   * Neither call rebases chart/log timing: isolated demand frames rely on
+   * that backfill to show up at all.
+   */
+  markGap() {
+    this.afterGap = true;
   }
 
   /** Start wall-clock timing of the render pass. */
   begin() {
     this.cpuStartTime = this.now();
+
+    if (this.idleSince > 0) {
+      if (this.cpuStartTime - this.idleSince > IDLE_MS) this.afterGap = true;
+      this.idleSince = 0;
+    }
   }
 
   /** Accumulate wall-clock into the frame's CPU total. */
@@ -160,13 +215,17 @@ export class PerfSampler {
     const t = now || this.now();
     const duration = t - this.paramTime;
 
-    const rawFps = this.calculateFps();
-    // EMA smoothing for displayed FPS
-    this.smoothFps =
-      this.smoothFps === 0
-        ? rawFps
-        : this.smoothFps + 0.1 * (rawFps - this.smoothFps);
-    const fps = this.smoothFps;
+    const afterGap = this.afterGap;
+    this.afterGap = false;
+
+    const rawFps = this.calculateFps(t, afterGap);
+    // Dip only on a clear stall (not idle), never above the windowed FPS
+    const delta = t - this.lastFrameTime;
+    const frameFps =
+      !afterGap && rawFps > 0 && delta > (STALL_FACTOR * 1000) / rawFps
+        ? Math.min(1000 / delta, rawFps)
+        : rawFps;
+    this.lastFrameTime = t;
     const cpu = this.totalCpuDuration;
 
     if (this.frameId <= 1) {
@@ -185,8 +244,11 @@ export class PerfSampler {
       );
 
       this.logsAccums.mem.push(this.currentMem);
-      this.logsAccums.fps.push(fps);
-      this.logsAccums.rawFps.push(rawFps);
+      // 0 = no FPS measured yet: leave it out of the average
+      if (rawFps > 0) {
+        this.logsAccums.fps.push(rawFps);
+        this.logsAccums.rawFps.push(rawFps);
+      }
       this.logsAccums.gpu.push(gpu);
       this.logsAccums.gpuCompute.push(gpuCompute);
       this.logsAccums.cpu.push(cpu);
@@ -219,7 +281,7 @@ export class PerfSampler {
     // reset accumulated CPU for the next frame
     this.totalCpuDuration = 0;
 
-    this.pushChart(t, fps, cpu, gpu);
+    this.pushChart(t, frameFps, cpu, gpu);
   }
 
   private pushChart(t: number, fps: number, cpu: number, gpu: number) {
@@ -261,8 +323,12 @@ export class PerfSampler {
 
   dispose() {
     this.frameTimes.length = 0;
+    this.frameAfterGap.length = 0;
     this.frameTimesHead = 0;
-    this.smoothFps = 0;
+    this.activeFps = 0;
+    this.lastFrameTime = 0;
+    this.afterGap = true;
+    this.idleSince = 0;
     this.totalCpuDuration = 0;
   }
 }
