@@ -35,7 +35,7 @@ function PaneTag({ id, count, particles }: Omit<PaneProps, "position">) {
         id="{id}" · {count} obj · {particles / 1000}k pts
       </strong>
       <span>
-        {api === "webgpu" ? "WebGPU" : "WebGL 2"} · {fps.toFixed(0)} FPS ·{" "}
+        {api === "webgpu" ? "WebGPU" : "WebGL 2"} · {fps > 0 ? fps.toFixed(0) : "-"} FPS ·{" "}
         {calls} draw calls · {gpuCompute.toFixed(3)} ms compute
       </span>
     </div>

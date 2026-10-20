@@ -29,7 +29,7 @@ function CustomHud({ id }: { id: string }) {
 
   return (
     <aside className="metrics-hud" aria-label={`Performance dashboard for canvas ${id}`}>
-      <Metric label="FPS" value={data.fps.toFixed(0)} />
+      <Metric label="FPS" value={data.fps > 0 ? data.fps.toFixed(0) : "-"} />
       <Metric label="CPU" value={data.cpu.toFixed(2)} unit="ms" />
       <Metric label="GPU" value={data.gpu.toFixed(2)} unit="ms" />
       <Metric label="VRAM" value={data.vram.toFixed(1)} unit="MB" />
@@ -94,7 +94,7 @@ export const CustomDashboards: Story = {
         code: `function Hud({ id }) {
   // Everything for one canvas; usePerfData(selector, { id }) reads one field
   const { fps, cpu, gpu, gl } = usePerfData({ id });
-  return <div>{fps.toFixed(0)} FPS · {gl.calls} calls</div>;
+  return <div>{fps > 0 ? fps.toFixed(0) : "-"} FPS · {gl.calls} calls</div>;
 }
 
 <Canvas>

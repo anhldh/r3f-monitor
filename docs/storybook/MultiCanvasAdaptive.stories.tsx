@@ -53,7 +53,7 @@ function Pane({ id, count, startFactor }: PaneProps) {
           <div className="quality-fill" style={{ width: `${factor * 100}%` }} />
         </div>
         <div className="quality-grid">
-          <div><span>FPS</span><strong>{fps.toFixed(0)}</strong></div>
+          <div><span>FPS</span><strong>{fps > 0 ? fps.toFixed(0) : "-"}</strong></div>
           <div><span>GPU ms</span><strong>{gpu.toFixed(2)}</strong></div>
           <div><span>CPU ms</span><strong>{cpu.toFixed(2)}</strong></div>
         </div>

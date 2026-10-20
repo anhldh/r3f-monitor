@@ -33,7 +33,7 @@ function PaneTag({ id, count }: { id: string; count: number }) {
         id="{id}" · {count + 2} meshes
       </strong>
       <span>
-        {fps.toFixed(0)} FPS · {calls} draw calls
+        {fps > 0 ? fps.toFixed(0) : "-"} FPS · {calls} draw calls
       </span>
     </div>
   );
@@ -84,7 +84,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Two independent `<Canvas>` elements on one page, each with its own `<PerfMonitor />` and a scene of a different weight. Each panel reports the canvas it is mounted in. The labels at the bottom sit outside the canvases and pick theirs with `usePerfData(selector, { id })`.",
+          "Two independent `<Canvas>` elements on one page, each with its own `<PerfMonitor />` and a scene of a different weight. Each panel reports the canvas it is mounted in. The labels at the bottom sit outside the canvases and pick theirs with `usePerfData(selector, { id })`. CPU time is split where each measured canvas starts its frame, so a canvas without a monitor that renders after a measured one adds to its CPU time: measure every canvas that renders when that matters.",
       },
       story: { inline: false, iframeHeight: 560 },
     },
@@ -122,7 +122,7 @@ export const TwoCanvases: Story = {
         language: "tsx",
         code: `function Label({ id }) {
   const fps = usePerfData((data) => data.fps, { id });
-  return <span>{fps.toFixed(0)} FPS</span>;
+  return <span>{fps > 0 ? fps.toFixed(0) : "-"} FPS</span>;
 }
 
 <Canvas>
