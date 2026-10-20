@@ -88,7 +88,9 @@ export function PerfAdaptive({
         if (samples.length === 0) return;
         queue.current = [];
         for (const log of samples) {
-          engine.addSample(log.rawFps ?? log.fps, log.gpu, log.cpu);
+          const fps = log.rawFps ?? log.fps;
+          // 0 = not measured yet (cold start); it would read as a huge drop
+          if (fps > 0) engine.addSample(fps, log.gpu, log.cpu);
         }
       }),
     [engine],

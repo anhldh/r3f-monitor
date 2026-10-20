@@ -82,6 +82,8 @@ export type State = {
   // --------------------------
   accumulated: {
     totalFrames: number;
+    /** Ticks with a measured fps (it is 0 before the first measurement). */
+    fpsFrames: number;
     log: Logger;
     gl: GLLogger;
     max: {
@@ -129,7 +131,7 @@ export const usePerfImpl = createWithEqualityFn<State>((_set, get): any => {
   function getReport() {
     const { accumulated, startTime, infos, estimatedMemory } = get();
     const maxMemory = get().log?.maxMemory;
-    const { totalFrames, log, gl, max } = accumulated;
+    const { totalFrames, fpsFrames, log, gl, max } = accumulated;
 
     const glAverage = {
       calls: gl.calls / totalFrames,
@@ -142,7 +144,7 @@ export const usePerfImpl = createWithEqualityFn<State>((_set, get): any => {
       gpu: log.gpu / totalFrames,
       cpu: log.cpu / totalFrames,
       mem: log.mem / totalFrames,
-      fps: log.fps / totalFrames,
+      fps: fpsFrames ? log.fps / fpsFrames : 0,
     };
 
     const sessionTime = (window.performance.now() - startTime) / 1000;
@@ -193,6 +195,7 @@ export const usePerfImpl = createWithEqualityFn<State>((_set, get): any => {
     // -------------------------------------
     accumulated: {
       totalFrames: 0,
+      fpsFrames: 0,
       gl: {
         calls: 0,
         triangles: 0,

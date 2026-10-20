@@ -124,13 +124,13 @@ displayType?: "tab" | "classic" // Default: "tab"
 
 Starting with **v2**, the FPS / CPU / GPU values come from a reworked measurement core:
 
-- **FPS** — counted over a real 1-second sliding window and reported as a continuous value, so the readout stays stable instead of flickering ±1. The graph also dips on single slow frames.
+- **FPS** — counted over a real 1-second sliding window and reported as a continuous value, so the readout stays stable instead of flickering ±1. Time the loop spends idle (on-demand pauses, hidden tab) is left out of the window. The line graph also dips on single frames that clearly stall (over 2× the current frame time).
 - **CPU** — wall-clock time of the render phase, accumulated per frame via `performance.now()`.
 - **GPU** — GPU time for the render pass, in **true milliseconds** (no scaling fudge). The mechanism depends on the renderer: a WebGL2 timer-query queue (`EXT_disjoint_timer_query_webgl2`) on `WebGLRenderer`, three's timestamp queries on `WebGPURenderer`. Both are read back asynchronously, so the value trails the current frame by a frame or two.
 
 The bar graph (`graphType: "bar"`) scrolls left as new samples arrive and uses a fixed (high-water) vertical scale, with a gradient fill per metric.
 
-**`frameloop="demand"`** (v3.1) — only frames R3F actually renders are measured, including single frames requested one at a time with `invalidate()`. While the scene is idle nothing is sampled: the readouts and `usePerfData` hold their last values and the graphs stop moving. Sampling picks up again on the next frame; the bar graph simply carries on, while the line graph fills the idle gap with the first new reading (up to the whole chart after a long pause). The monitor never keeps an on-demand canvas awake by itself — the only extra frames are a few rendered right after `deepAnalyze` is switched on, so its list fills while the scene is idle.
+**`frameloop="demand"`** (v3.1) — only frames R3F actually renders are measured, including single frames requested one at a time with `invalidate()`. While the scene is idle nothing is sampled: the readouts and `usePerfData` hold their last values and the graphs stop moving. Sampling picks up again on the next frame; the bar graph simply carries on, while the line graph fills the idle gap with the first new reading (up to the whole chart after a long pause). Idle time doesn't count as slow frames, so resuming reads the FPS the scene actually renders at. The flip side: a freeze that happens while no frame is pending can't be told apart from idle and doesn't show as a dip (time spent inside a frame still shows as CPU). The monitor never keeps an on-demand canvas awake by itself — the only extra frames are a few rendered right after `deepAnalyze` is switched on, so its list fills while the scene is idle.
 
 ---
 
