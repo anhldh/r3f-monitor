@@ -8,6 +8,8 @@ import type {
 /**
  * Throttled perf metrics, ready for UI.
  * - fps/cpu/gpu/mem/vram: live values, updated at `logsPerSecond` (~10/s).
+ *   `fps` is 0 until it has been measured (on mount, or before the first
+ *   continuous frames of an on-demand canvas).
  * - gl: render stats of the latest frame.
  * - infos: renderer info (static for the session).
  */

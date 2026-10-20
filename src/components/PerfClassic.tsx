@@ -139,7 +139,9 @@ export const PerfClassic: FC<PerfPropsGui> = (props) => {
   useEvent("log", (payload: any) => {
     const [log] = payload as EventPayload;
     if (log && fpsRef.current) {
-      fpsRef.current.innerText = Math.round(log.fps).toString();
+      // 0 = not measured yet
+      fpsRef.current.innerText =
+        log.fps > 0 ? Math.round(log.fps).toString() : "-";
     }
   });
 
@@ -173,7 +175,7 @@ export const PerfClassic: FC<PerfPropsGui> = (props) => {
           {gl && (
             <div className={s.perfIContainer}>
               <MetricItem label={`FPS`} color={colorsGraph.fps}>
-                <span ref={fpsRef}>0</span>
+                <span ref={fpsRef}>-</span>
               </MetricItem>
 
               <MetricItem label="CPU" color={colorsGraph.cpu}>

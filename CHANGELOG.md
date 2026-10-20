@@ -4,6 +4,31 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## Unreleased
+
+### Changed
+
+- **FPS line graph plots per frame.** A frame that clearly stalls (over 2× the
+  current frame time, e.g. a few hundred ms spent loading a model) now shows as
+  a dip instead of being smoothed away. Ordinary frame-time jitter doesn't, and
+  the graph never reads above the windowed FPS.
+- **`fps` (readout, `usePerfData`) is no longer EMA-smoothed.** It is the
+  1-second window average per log tick, the same value as `rawFps`, so it
+  follows drops faster.
+- The FPS window is timed with R3F's rAF timestamps and reports only once it
+  holds 100 ms of rendering, so the first readings after mount no longer
+  overshoot the refresh rate (which also skewed `PerfAdaptive`'s refresh-rate
+  estimate). Until then `fps` / `rawFps` are `0`, shown as `-`, and
+  `PerfAdaptive` skips those samples.
+
+### Fixed
+
+- Idle time (`frameloop="demand"` pauses over 100 ms, hidden tab) no longer
+  counts as frame time: FPS readouts, the graphs and the `rawFps` fed to
+  `PerfAdaptive` no longer sag for up to a second after rendering resumes, and
+  isolated `invalidate()` frames no longer read as ~1 FPS. Back-to-back demand
+  frames while interacting still count normally.
+
 ## 3.1.0 - 30-09-2026
 
 **`deepAnalyze` on WebGPU, and `frameloop="demand"` support.** Closes the one

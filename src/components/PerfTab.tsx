@@ -19,11 +19,14 @@ const MetricValue = ({
   field,
   decimal = 0,
   suffix = "",
+  zeroAsEmpty = false,
 }: {
   type: "log" | "gl" | "store";
   field: string;
   decimal?: number;
   suffix?: string;
+  /** Show "-" for 0 (a value not measured yet, e.g. fps). */
+  zeroAsEmpty?: boolean;
 }) => {
   const ref = useRef<HTMLSpanElement>(null);
   const storeVal = usePerf((s) =>
@@ -37,7 +40,8 @@ const MetricValue = ({
       let val = 0;
       if (type === "log" && log) val = log[field];
       if (type === "gl" && gl) val = gl[field];
-      ref.current.innerText = val.toFixed(decimal) + suffix;
+      ref.current.innerText =
+        zeroAsEmpty && !(val > 0) ? "-" : val.toFixed(decimal) + suffix;
     }
   });
 
@@ -227,7 +231,7 @@ export const PerfTab: FC<PerfPropsGui> = (props) => {
                         FPS
                       </span>
                       <span className={s.val}>
-                        <MetricValue type="log" field="fps" />
+                        <MetricValue type="log" field="fps" zeroAsEmpty />
                       </span>
                     </div>
                     <div className={s.cell}>
