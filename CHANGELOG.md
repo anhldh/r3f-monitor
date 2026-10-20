@@ -47,6 +47,9 @@ freeze instead of smoothing them away.
 
 ### Fixed
 
+- With `frameloop="demand"`, isolated `invalidate()` frames update the
+  readouts, `usePerfData` and both graphs; before, the metrics and bar graph
+  could stay frozen and the line graph skipped them.
 - Idle time (`frameloop="demand"` pauses over 100 ms, hidden tab) no longer
   counts as frame time: FPS readouts, the graphs and the `rawFps` fed to
   `PerfAdaptive` no longer sag for up to a second after rendering resumes, and
