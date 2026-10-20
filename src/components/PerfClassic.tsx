@@ -165,7 +165,7 @@ export const PerfClassic: FC<PerfPropsGui> = (props) => {
         deepAnalyze={deepAnalyze}
         matrixUpdate={matrixUpdate}
       />
-      <HtmlMinimal name="r3f-perf">
+      <HtmlMinimal name="r3f-monitor">
         <div
           className={`${s.perfS} ${positionClass} ${minimal ? s.minimal : ""} ${className || ""} ${heightStyle ? s.containerHeight : ""}`}
           style={style}
